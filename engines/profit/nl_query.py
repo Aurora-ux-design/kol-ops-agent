@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
 
-from integrations.claude_client import create_message
+from integrations.llm_client import create_message
 
 from .formulas import calculate_breakeven_commission_rate, calculate_gross_profit, calculate_profit
 from .models import CostStructure, ProfitResult

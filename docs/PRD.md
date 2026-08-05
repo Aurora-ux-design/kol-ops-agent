@@ -563,7 +563,7 @@ V4.0 — 远期规划
 | 向量检索 | ChromaDB | 达人/商品 Embedding 粗排 |
 | 结构化数据 | SQLite | 达人池、商品库、匹配记录、异常历史 |
 | 脚本模板引擎 | Jinja2 | 模板骨架 + LLM 内容填充 |
-| LLM 能力 | Claude API | 语义理解、多维精排、脚本生成、意图解析、结果人话化 |
+| LLM 能力 | DeepSeek API（OpenAI 兼容接口） | 语义理解、多维精排、脚本生成、意图解析、结果人话化。V1.0 开发阶段由 Claude API 改为 DeepSeek，原因见 CLAUDE.md |
 | 外部数据 | CSV / ERP 导出、蝉妈妈/飞瓜、抖音热榜、巨量千川 API（后期） | MVP 阶段以 CSV 模拟，逐步替换为直连 |
 
 ### B\. 竞品对比

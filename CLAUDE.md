@@ -31,7 +31,7 @@
 | 向量检索 | ChromaDB | 达人/商品 Embedding 粗排（语义相似度 Top N） |
 | 结构化数据 | SQLite | 达人池、商品库、匹配记录、异常历史等持久化数据 |
 | 脚本模板引擎 | Jinja2 | 脚本骨架模板（口播/剧情/测评）+ LLM 内容填充 |
-| LLM 能力 | Claude API | 语义理解、多维精排、脚本生成、意图解析、结果人话化 |
+| LLM 能力 | DeepSeek API（OpenAI 兼容接口） | 语义理解、多维精排、脚本生成、意图解析、结果人话化。原计划用 Claude API，因跨境支付/访问不便且中文语境场景下国内模型性价比更高，改用 DeepSeek |
 | 外部数据 | CSV / ERP 导出 | MVP 阶段以 CSV 模拟真实数据源，逐步替换为直连 API |
 
 不引入清单之外的框架（如另起一个 Web 框架、另一个向量库、另一个 ORM）。如确有必要，先在对话中说明理由，不要直接改动技术选型。
@@ -49,7 +49,7 @@ kol-ops-agent/
 │   ├── profit/               # 损益计算引擎（确定性公式 + 自然语言查询）
 │   └── audit/                 # 投产审核引擎（异常检测 + 品控校验，V2/V3 落地）
 ├── integrations/             # 外部系统适配层
-│   ├── claude_client.py      # Claude API 封装（统一走这里调用，不要在引擎代码里直接建 SDK 客户端）
+│   ├── llm_client.py          # DeepSeek API 封装（统一走这里调用，不要在引擎代码里直接建 SDK 客户端）
 │   ├── feishu.py              # 飞书消息推送/卡片审批
 │   └── erp/                   # ERPDataProvider 抽象基类 + CSVDataProvider 等实现
 ├── data/                     # 数据层
@@ -83,7 +83,7 @@ kol-ops-agent/
 
 **LLM 调用**
 
-- 所有 Claude API 调用必须经过 `integrations/claude_client.py` 统一封装，便于统一做重试、超时、日志、模型版本切换。
+- 所有 LLM 调用必须经过 `integrations/llm_client.py` 统一封装，便于统一做重试、超时、日志、模型/供应商切换——`create_message()` 的入参和返回结构仿照 Anthropic 的 tool-use 形状，是为了让业务代码（`nl_query.py`、`explain.py`）不需要感知背后到底是哪家 LLM。
 - LLM 输出涉及结构化数据时用受限输出（如 JSON schema / 工具调用），不要依赖正则从自由文本里抠数据。
 - 凡是"结果需要给运营看的数字"（金额、ROI、佣金率、权重分数汇总），必须能追溯到确定性计算函数，LLM 不直接生成这些数值。
 

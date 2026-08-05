@@ -54,7 +54,7 @@
 
 ## 技术栈
 
-Streamlit · ChromaDB · SQLite · Jinja2 · Claude API · 飞书开放平台
+Streamlit · ChromaDB · SQLite · Jinja2 · DeepSeek API · 飞书开放平台
 
 ## 路线图
 
