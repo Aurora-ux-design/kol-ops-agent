@@ -121,6 +121,19 @@ def get_influencers_by_ids(conn: sqlite3.Connection, influencer_ids: list[str]) 
     ).fetchall()
 
 
+def get_influencer(conn: sqlite3.Connection, influencer_id: str) -> sqlite3.Row:
+    row = conn.execute(
+        "SELECT * FROM influencer_pool WHERE influencer_id = ?", (influencer_id,)
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"未找到达人：{influencer_id}")
+    return row
+
+
+def get_all_influencers(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM influencer_pool ORDER BY influencer_id").fetchall()
+
+
 def upsert_products(conn: sqlite3.Connection, rows: list[dict]) -> None:
     placeholders = ", ".join("?" for _ in _PRODUCT_COLUMNS)
     update_clause = ", ".join(f"{col}=excluded.{col}" for col in _PRODUCT_COLUMNS[1:])

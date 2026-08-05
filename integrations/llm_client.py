@@ -107,7 +107,17 @@ def create_message(
     content: list[ContentBlock] = []
     if choice.message.tool_calls:
         for tool_call in choice.message.tool_calls:
-            content.append(ToolUseBlock(input=json.loads(tool_call.function.arguments)))
+            raw_arguments = tool_call.function.arguments
+            try:
+                parsed_arguments = json.loads(raw_arguments)
+            except json.JSONDecodeError as exc:
+                # DeepSeek 偶尔会返回没转义好的 tool call 参数（比如字符串里混进未转义的换行），
+                # 把 finish_reason 和原始内容带出来，比只看 json 报的字符位置好排查得多
+                raise ValueError(
+                    f"DeepSeek 返回的 tool call 参数不是合法 JSON"
+                    f"（finish_reason={choice.finish_reason}）：\n{raw_arguments}"
+                ) from exc
+            content.append(ToolUseBlock(input=parsed_arguments))
     if choice.message.content:
         content.append(TextBlock(text=choice.message.content))
 

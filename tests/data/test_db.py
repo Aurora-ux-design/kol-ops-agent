@@ -4,7 +4,9 @@ import sqlite3
 import pytest
 
 from data.db import (
+    get_all_influencers,
     get_all_products,
+    get_influencer,
     get_influencers_by_ids,
     get_product,
     init_db,
@@ -75,6 +77,31 @@ def test_upsert_and_get_influencers_by_ids(conn: sqlite3.Connection) -> None:
 
 def test_get_influencers_by_ids_empty_list_returns_empty(conn: sqlite3.Connection) -> None:
     assert get_influencers_by_ids(conn, []) == []
+
+
+def test_get_influencer_returns_row(conn: sqlite3.Connection) -> None:
+    upsert_influencers(conn, [_influencer_row("INF001")])
+
+    row = get_influencer(conn, "INF001")
+
+    assert row["name"] == "小美的美妆日记"
+
+
+def test_get_influencer_missing_raises_key_error(conn: sqlite3.Connection) -> None:
+    with pytest.raises(KeyError):
+        get_influencer(conn, "NOT_EXIST")
+
+
+def test_get_all_influencers_returns_all_ordered_by_id(conn: sqlite3.Connection) -> None:
+    upsert_influencers(conn, [_influencer_row("INF002"), _influencer_row("INF001")])
+
+    rows = get_all_influencers(conn)
+
+    assert [row["influencer_id"] for row in rows] == ["INF001", "INF002"]
+
+
+def test_get_all_influencers_empty_pool_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert get_all_influencers(conn) == []
 
 
 def test_upsert_influencers_updates_existing_row(conn: sqlite3.Connection) -> None:

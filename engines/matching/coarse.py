@@ -16,7 +16,7 @@ INFLUENCER_AUDIENCE_COLLECTION = "influencer_audience"
 INFLUENCER_STYLE_COLLECTION = "influencer_style"
 
 
-def _row_to_influencer(row: sqlite3.Row) -> InfluencerProfile:
+def influencer_row_to_profile(row: sqlite3.Row) -> InfluencerProfile:
     return InfluencerProfile(
         influencer_id=row["influencer_id"],
         name=row["name"],
@@ -65,7 +65,7 @@ def coarse_rank_influencers(
     }
 
     rows = data_db.get_influencers_by_ids(conn, candidate_ids)
-    influencers_by_id = {row["influencer_id"]: _row_to_influencer(row) for row in rows}
+    influencers_by_id = {row["influencer_id"]: influencer_row_to_profile(row) for row in rows}
 
     return [
         (
