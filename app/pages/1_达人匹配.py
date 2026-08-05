@@ -8,11 +8,13 @@ from datetime import date
 
 import streamlit as st
 
+from app.utils import product_picker
 from data.db import get_all_products, get_connection
 from engines.matching.pipeline import match_influencers
 
-st.set_page_config(page_title="达人匹配", page_icon="🎯")
+st.set_page_config(page_title="达人匹配", page_icon="🎯", layout="wide")
 st.title("达人匹配")
+st.caption("给定商品，从达人池里筛出并排序最匹配的候选，附可读理由。")
 
 with closing(get_connection()) as conn:
     products = get_all_products(conn)
@@ -21,10 +23,7 @@ if not products:
     st.warning("商品目录是空的，先在项目根目录跑 `python -m data.seed` 初始化数据。")
     st.stop()
 
-product_options = {row["product_id"]: f"{row['product_id']} · {row['name']}" for row in products}
-product_id = st.selectbox(
-    "选择商品", options=list(product_options.keys()), format_func=lambda pid: product_options[pid]
-)
+product_id = product_picker(products)
 requested_date = st.date_input("期望投放日期", value=date.today())
 
 if st.button("开始匹配", type="primary"):
@@ -37,8 +36,13 @@ if st.button("开始匹配", type="primary"):
 
     st.subheader(f"Top{len(result.candidates)} 候选")
     for rank, candidate in enumerate(result.candidates, start=1):
-        st.markdown(f"**{rank}. {candidate.influencer_id}** —— 总分 {candidate.weighted_total:.1f}")
-        st.write(candidate.reason or "（没有生成理由）")
-        with st.expander("查看 5 维度打分依据"):
-            for dim in candidate.dimension_scores:
-                st.write(f"- **{dim.name}**：{dim.score:.1f} 分 —— {dim.detail}")
+        with st.container(border=True):
+            score_col, reason_col = st.columns([1, 4])
+            with score_col:
+                st.metric(f"第 {rank} 名", candidate.influencer_id)
+                st.caption(f"总分 {candidate.weighted_total:.1f}")
+            with reason_col:
+                st.write(candidate.reason or "（没有生成理由）")
+            with st.expander("查看 5 维度打分依据"):
+                for dim in candidate.dimension_scores:
+                    st.write(f"- **{dim.name}**：{dim.score:.1f} 分 —— {dim.detail}")

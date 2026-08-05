@@ -9,7 +9,7 @@ import streamlit as st
 
 _WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "matching_weights.json"
 
-st.set_page_config(page_title="匹配权重调控", page_icon="⚙️")
+st.set_page_config(page_title="匹配权重调控", page_icon="⚙️", layout="wide")
 st.title("匹配权重调控")
 st.caption("调整 5 个匹配维度的权重，保存后立即生效，不需要改代码或重启。")
 
@@ -25,14 +25,19 @@ DIMENSION_LABELS = {
 }
 
 weights = {}
-for key, label in DIMENSION_LABELS.items():
-    weights[key] = st.number_input(
-        label,
-        min_value=0.0,
-        max_value=1.0,
-        value=float(config["dimension_weights"][key]),
-        step=0.05,
-    )
+with st.container(border=True):
+    for key, label in DIMENSION_LABELS.items():
+        input_col, bar_col = st.columns([2, 3])
+        with input_col:
+            weights[key] = st.number_input(
+                label,
+                min_value=0.0,
+                max_value=1.0,
+                value=float(config["dimension_weights"][key]),
+                step=0.05,
+            )
+        with bar_col:
+            st.progress(min(max(weights[key], 0.0), 1.0), text=f"{weights[key]:.0%}")
 
 total = sum(weights.values())
 if abs(total - 1.0) > 1e-6:

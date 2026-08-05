@@ -9,6 +9,7 @@ from decimal import Decimal
 
 import streamlit as st
 
+from app.utils import product_picker
 from data.db import get_all_products, get_connection
 from engines.matching.pipeline import product_row_to_profile
 from engines.profit.nl_query import (
@@ -18,8 +19,9 @@ from engines.profit.nl_query import (
     extract_query_params,
 )
 
-st.set_page_config(page_title="损益查询", page_icon="💰")
+st.set_page_config(page_title="损益查询", page_icon="💰", layout="wide")
 st.title("损益查询")
+st.caption("自然语言查佣金上限/ROI/保本线，算术全部走确定性公式，LLM 只负责解析意图和翻译成人话。")
 
 with closing(get_connection()) as conn:
     products = get_all_products(conn)
@@ -28,10 +30,7 @@ if not products:
     st.warning("商品目录是空的，先在项目根目录跑 `python -m data.seed` 初始化数据。")
     st.stop()
 
-product_options = {row["product_id"]: f"{row['product_id']} · {row['name']}" for row in products}
-product_id = st.selectbox(
-    "选择商品", options=list(product_options.keys()), format_func=lambda pid: product_options[pid]
-)
+product_id = product_picker(products)
 selected_row = next(row for row in products if row["product_id"] == product_id)
 product = product_row_to_profile(selected_row)
 
@@ -55,27 +54,30 @@ if st.button("解析"):
 params = st.session_state.get("profit_params")
 
 if params is not None:
-    st.subheader("确认参数")
-    intent_label = "净利润/ROI 查询" if params.intent is QueryIntent.NET_PROFIT else "保本佣金率查询"
-    st.write(f"意图：{intent_label}")
+    with st.container(border=True):
+        st.subheader("确认参数")
+        intent_label = "净利润/ROI 查询" if params.intent is QueryIntent.NET_PROFIT else "保本佣金率查询"
+        st.write(f"意图：{intent_label}")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("商品目录里的真实售价（计算实际用这个）", f"{product.selling_price} 元")
-    with col2:
-        st.metric("LLM 从问题里解析出的售价（仅供比对）", f"{params.selling_price} 元")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("商品目录里的真实售价（计算实际用这个）", f"{product.selling_price} 元")
+        with col2:
+            st.metric("LLM 从问题里解析出的售价（仅供比对）", f"{params.selling_price} 元")
 
-    confirmed_rate = None
-    if params.intent is QueryIntent.NET_PROFIT:
-        confirmed_rate = st.number_input(
-            "达人佣金率（0~1 之间的小数）",
-            min_value=0.0,
-            max_value=1.0,
-            value=float(params.influencer_commission_rate or 0),
-            step=0.01,
-        )
+        confirmed_rate = None
+        if params.intent is QueryIntent.NET_PROFIT:
+            confirmed_rate = st.number_input(
+                "达人佣金率（0~1 之间的小数）",
+                min_value=0.0,
+                max_value=1.0,
+                value=float(params.influencer_commission_rate or 0),
+                step=0.01,
+            )
 
-    if st.button("计算", type="primary"):
+        compute_clicked = st.button("计算", type="primary")
+
+    if compute_clicked:
         confirmed_params = dataclasses.replace(params, selling_price=product.selling_price)
         if params.intent is QueryIntent.NET_PROFIT:
             confirmed_params = dataclasses.replace(
@@ -91,9 +93,6 @@ if params is not None:
                         product.cost_structure,
                         product.platform_commission_rate,
                     )
-                    st.metric("净利润", f"{result.net_profit:.2f} 元")
-                    st.metric("ROI", f"{result.roi:.2f}")
-                    st.metric("保本佣金率", f"{result.breakeven_commission_rate:.2%}")
                 else:
                     breakeven_rate, explanation = answer_breakeven_query(
                         st.session_state["profit_query"],
@@ -101,9 +100,17 @@ if params is not None:
                         product.cost_structure,
                         product.platform_commission_rate,
                     )
-                    st.metric("保本佣金率", f"{breakeven_rate:.2%}")
             except Exception as exc:
                 st.error(f"计算失败：{exc}")
                 st.stop()
 
-        st.write(explanation)
+        with st.container(border=True):
+            st.subheader("计算结果")
+            if confirmed_params.intent is QueryIntent.NET_PROFIT:
+                m1, m2, m3 = st.columns(3)
+                m1.metric("净利润", f"{result.net_profit:.2f} 元")
+                m2.metric("ROI", f"{result.roi:.2f}")
+                m3.metric("保本佣金率", f"{result.breakeven_commission_rate:.2%}")
+            else:
+                st.metric("保本佣金率", f"{breakeven_rate:.2%}")
+            st.write(explanation)
