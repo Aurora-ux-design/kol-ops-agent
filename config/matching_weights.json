@@ -1,10 +1,10 @@
 {
   "dimension_weights": {
-    "audience_overlap": 0.35,
-    "content_style_match": 0.30,
-    "historical_performance": 0.15,
-    "commission_fit": 0.10,
-    "schedule_availability": 0.10
+    "audience_overlap": 0.15,
+    "content_style_match": 0.3,
+    "historical_performance": 0.35,
+    "commission_fit": 0.1,
+    "schedule_availability": 0.1
   },
   "historical_performance_subweights": {
     "gmv": 0.3333333333,

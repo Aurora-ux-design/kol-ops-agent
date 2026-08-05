@@ -4,6 +4,7 @@ import sqlite3
 import pytest
 
 from data.db import (
+    get_all_products,
     get_influencers_by_ids,
     get_product,
     init_db,
@@ -100,6 +101,18 @@ def test_upsert_and_get_product(conn: sqlite3.Connection) -> None:
 def test_get_product_missing_raises_key_error(conn: sqlite3.Connection) -> None:
     with pytest.raises(KeyError):
         get_product(conn, "NOT_EXIST")
+
+
+def test_get_all_products_returns_all_ordered_by_id(conn: sqlite3.Connection) -> None:
+    upsert_products(conn, [_product_row("P002"), _product_row("P001")])
+
+    rows = get_all_products(conn)
+
+    assert [row["product_id"] for row in rows] == ["P001", "P002"]
+
+
+def test_get_all_products_empty_catalog_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert get_all_products(conn) == []
 
 
 def test_record_match_persists_snapshot(conn: sqlite3.Connection) -> None:

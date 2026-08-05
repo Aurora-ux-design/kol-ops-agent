@@ -40,8 +40,7 @@ def _load_weights_config() -> dict:
     }
 
 
-def _load_product(conn: sqlite3.Connection, product_id: str) -> ProductProfile:
-    row = data_db.get_product(conn, product_id)
+def product_row_to_profile(row: sqlite3.Row) -> ProductProfile:
     return ProductProfile(
         product_id=row["product_id"],
         name=row["name"],
@@ -61,6 +60,10 @@ def _load_product(conn: sqlite3.Connection, product_id: str) -> ProductProfile:
     )
 
 
+def load_product(conn: sqlite3.Connection, product_id: str) -> ProductProfile:
+    return product_row_to_profile(data_db.get_product(conn, product_id))
+
+
 def match_influencers(
     product_id: str,
     requested_date: date | None = None,
@@ -71,7 +74,7 @@ def match_influencers(
     weights = _load_weights_config()
 
     with closing(data_db.get_connection()) as conn:
-        product = _load_product(conn, product_id)
+        product = load_product(conn, product_id)
 
         chroma_client = vector_store.get_client()
         coarse_candidates = coarse_rank_influencers(conn, chroma_client, product, top_n=coarse_top_n)

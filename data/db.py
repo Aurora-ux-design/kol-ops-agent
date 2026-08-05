@@ -143,6 +143,10 @@ def get_product(conn: sqlite3.Connection, product_id: str) -> sqlite3.Row:
     return row
 
 
+def get_all_products(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM product_catalog ORDER BY product_id").fetchall()
+
+
 def record_match(
     conn: sqlite3.Connection,
     product_id: str,
