@@ -1,0 +1,15 @@
+{
+  "dimension_weights": {
+    "audience_overlap": 0.35,
+    "content_style_match": 0.30,
+    "historical_performance": 0.15,
+    "commission_fit": 0.10,
+    "schedule_availability": 0.10
+  },
+  "historical_performance_subweights": {
+    "gmv": 0.3333333333,
+    "roi": 0.3333333333,
+    "completion_rate": 0.3333333333
+  },
+  "max_wait_days": 30
+}

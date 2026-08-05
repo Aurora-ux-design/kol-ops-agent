@@ -5,4 +5,5 @@ __pycache__/
 venv/
 .env
 *.db
+data/chroma/
 .claude/settings.local.json
