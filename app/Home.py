@@ -5,7 +5,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
 
+from app.utils import bootstrap
+
 st.set_page_config(page_title="达人运营智能 Agent", page_icon="🎯", layout="wide")
+bootstrap()
 
 st.title("达人运营智能 Agent")
 st.caption("输入一个商品，Agent 告诉你应该找哪个达人、用什么脚本卖、佣金给到多少不亏。")

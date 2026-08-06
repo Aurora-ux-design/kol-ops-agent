@@ -8,11 +8,12 @@ from datetime import date
 
 import streamlit as st
 
-from app.utils import product_picker
+from app.utils import bootstrap, product_picker
 from data.db import get_all_products, get_connection
 from engines.matching.pipeline import match_influencers
 
 st.set_page_config(page_title="达人匹配", page_icon="🎯", layout="wide")
+bootstrap()
 st.title("达人匹配")
 st.caption("给定商品，从达人池里筛出并排序最匹配的候选，附可读理由。")
 

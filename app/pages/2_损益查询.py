@@ -9,7 +9,7 @@ from decimal import Decimal
 
 import streamlit as st
 
-from app.utils import product_picker
+from app.utils import bootstrap, product_picker
 from data.db import get_all_products, get_connection
 from engines.matching.pipeline import product_row_to_profile
 from engines.profit.nl_query import (
@@ -20,6 +20,7 @@ from engines.profit.nl_query import (
 )
 
 st.set_page_config(page_title="损益查询", page_icon="💰", layout="wide")
+bootstrap()
 st.title("损益查询")
 st.caption("自然语言查佣金上限/ROI/保本线，算术全部走确定性公式，LLM 只负责解析意图和翻译成人话。")
 

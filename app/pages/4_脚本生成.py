@@ -7,12 +7,13 @@ from contextlib import closing
 
 import streamlit as st
 
-from app.utils import influencer_picker, product_picker
+from app.utils import bootstrap, influencer_picker, product_picker
 from data.db import get_all_influencers, get_all_products, get_connection
 from engines.script.models import ScriptFormat
 from engines.script.pipeline import generate_scripts
 
 st.set_page_config(page_title="脚本生成", page_icon="📝", layout="wide")
+bootstrap()
 st.title("脚本生成")
 st.caption("给定商品+达人，生成口播/剧情/测评三版脚本，附确定性合规词检查。")
 

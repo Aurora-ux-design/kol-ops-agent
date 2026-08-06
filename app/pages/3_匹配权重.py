@@ -7,9 +7,12 @@ import json
 
 import streamlit as st
 
+from app.utils import bootstrap
+
 _WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "matching_weights.json"
 
 st.set_page_config(page_title="匹配权重调控", page_icon="⚙️", layout="wide")
+bootstrap()
 st.title("匹配权重调控")
 st.caption("调整 5 个匹配维度的权重，保存后立即生效，不需要改代码或重启。")
 
