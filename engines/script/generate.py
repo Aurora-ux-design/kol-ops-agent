@@ -25,6 +25,10 @@ _VOICEOVER_TOOL = {
             },
             "call_to_action": {"type": "string", "description": "促单话术"},
             "applicable_scenario": {"type": "string", "description": "这版脚本适合什么场景/什么风格的达人来讲"},
+            "hotspot_reference": {
+                "type": "string",
+                "description": "如果用到了给定的热点参考，写出具体是哪一个；没有热点参考或者没用到就留空字符串",
+            },
         },
         "required": ["hook", "pain_point", "selling_points", "call_to_action", "applicable_scenario"],
     },
@@ -41,6 +45,10 @@ _NARRATIVE_TOOL = {
             "emotional_turn": {"type": "string", "description": "情感转折"},
             "closing": {"type": "string", "description": "收尾"},
             "applicable_scenario": {"type": "string", "description": "这版脚本适合什么场景/什么风格的达人来讲"},
+            "hotspot_reference": {
+                "type": "string",
+                "description": "如果用到了给定的热点参考，写出具体是哪一个；没有热点参考或者没用到就留空字符串",
+            },
         },
         "required": ["scene_setup", "product_integration", "emotional_turn", "closing", "applicable_scenario"],
     },
@@ -56,27 +64,36 @@ _REVIEW_TOOL = {
             "trial_comparison": {"type": "string", "description": "现场试用/对比"},
             "verdict": {"type": "string", "description": "结论背书，强调真实感和可信度"},
             "applicable_scenario": {"type": "string", "description": "这版脚本适合什么场景/什么风格的达人来讲"},
+            "hotspot_reference": {
+                "type": "string",
+                "description": "如果用到了给定的热点参考，写出具体是哪一个；没有热点参考或者没用到就留空字符串",
+            },
         },
         "required": ["unboxing", "trial_comparison", "verdict", "applicable_scenario"],
     },
 }
 
+_HOTSPOT_INSTRUCTION = (
+    "如果对话里给了热点参考，贴合的话可以自然融入（不要生硬硬套），"
+    "用到了就在 hotspot_reference 里写清楚具体用了哪一条，没给热点参考或者没用上就留空字符串。"
+)
+
 _VOICEOVER_SYSTEM_PROMPT = (
     "你是达人运营的脚本创作助手，负责写口播带货脚本：痛点引入 → 卖点罗列 → 促单话术，"
     "节奏要快，依赖开头钩子抓住前 3 秒。必须贴合给到的达人内容风格和粉丝画像来写，不要写成通用模板腔。"
-    "必须调用工具返回结构化结果，不要输出多余文字。"
+    f"{_HOTSPOT_INSTRUCTION}必须调用工具返回结构化结果，不要输出多余文字。"
 )
 
 _NARRATIVE_SYSTEM_PROMPT = (
     "你是达人运营的脚本创作助手，负责写剧情带货脚本：场景化短剧结构，商品作为解决方案自然植入，"
     "不要写成硬广。必须贴合给到的达人内容风格和粉丝画像来写。"
-    "必须调用工具返回结构化结果，不要输出多余文字。"
+    f"{_HOTSPOT_INSTRUCTION}必须调用工具返回结构化结果，不要输出多余文字。"
 )
 
 _REVIEW_SYSTEM_PROMPT = (
     "你是达人运营的脚本创作助手，负责写测评带货脚本：开箱 → 现场试用/对比 → 结论背书，"
     "强调真实感和可信度。必须贴合给到的达人内容风格和粉丝画像来写。"
-    "必须调用工具返回结构化结果，不要输出多余文字。"
+    f"{_HOTSPOT_INSTRUCTION}必须调用工具返回结构化结果，不要输出多余文字。"
 )
 
 

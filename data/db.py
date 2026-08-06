@@ -54,6 +54,14 @@ CREATE TABLE IF NOT EXISTS match_records (
     actual_gmv TEXT,
     actual_roi TEXT
 );
+
+CREATE TABLE IF NOT EXISTS hotspots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT NOT NULL,
+    description TEXT NOT NULL,
+    is_enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
 """
 
 _INFLUENCER_COLUMNS = [
@@ -158,6 +166,31 @@ def get_product(conn: sqlite3.Connection, product_id: str) -> sqlite3.Row:
 
 def get_all_products(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute("SELECT * FROM product_catalog ORDER BY product_id").fetchall()
+
+
+def create_hotspot(conn: sqlite3.Connection, keyword: str, description: str) -> int:
+    cursor = conn.execute(
+        "INSERT INTO hotspots (keyword, description, is_enabled, created_at) VALUES (?, ?, 1, ?)",
+        (keyword, description, datetime.now().isoformat()),
+    )
+    conn.commit()
+    return cursor.lastrowid
+
+
+def get_hotspot(conn: sqlite3.Connection, hotspot_id: int | str) -> sqlite3.Row:
+    row = conn.execute("SELECT * FROM hotspots WHERE id = ?", (hotspot_id,)).fetchone()
+    if row is None:
+        raise KeyError(f"未找到热点：{hotspot_id}")
+    return row
+
+
+def get_all_hotspots(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM hotspots ORDER BY created_at DESC").fetchall()
+
+
+def set_hotspot_enabled(conn: sqlite3.Connection, hotspot_id: int | str, enabled: bool) -> None:
+    conn.execute("UPDATE hotspots SET is_enabled = ? WHERE id = ?", (1 if enabled else 0, hotspot_id))
+    conn.commit()
 
 
 def record_match(

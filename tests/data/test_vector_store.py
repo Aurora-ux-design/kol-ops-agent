@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from data.vector_store import get_client, get_collection, get_embeddings, query_top_n, upsert_texts
+from data.vector_store import (
+    delete_texts,
+    get_client,
+    get_collection,
+    get_embeddings,
+    query_top_n,
+    upsert_texts,
+)
 
 
 class _FakeEmbeddingFunction:
@@ -75,3 +82,21 @@ def test_get_embeddings_returns_vectors_for_requested_ids(tmp_path: Path) -> Non
 def test_get_embeddings_empty_ids_returns_empty_dict(tmp_path: Path) -> None:
     collection = _collection(tmp_path)
     assert get_embeddings(collection, []) == {}
+
+
+def test_delete_texts_removes_ids(tmp_path: Path) -> None:
+    collection = _collection(tmp_path)
+    upsert_texts(collection, ids=["a", "b"], texts=["文本一", "文本二"])
+
+    delete_texts(collection, ["a"])
+
+    assert get_embeddings(collection, ["a", "b"]).keys() == {"b"}
+
+
+def test_delete_texts_empty_ids_is_noop(tmp_path: Path) -> None:
+    collection = _collection(tmp_path)
+    upsert_texts(collection, ids=["a"], texts=["文本一"])
+
+    delete_texts(collection, [])
+
+    assert set(get_embeddings(collection, ["a"]).keys()) == {"a"}

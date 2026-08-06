@@ -46,6 +46,12 @@ def query_top_n(collection: Any, query_text: str, top_n: int) -> list[tuple[str,
     return [(id_, 1.0 - distance) for id_, distance in zip(ids, distances)]
 
 
+def delete_texts(collection: Any, ids: list[str]) -> None:
+    if not ids:
+        return
+    collection.delete(ids=ids)
+
+
 def get_embeddings(collection: Any, ids: list[str]) -> dict[str, list[float]]:
     if not ids:
         return {}

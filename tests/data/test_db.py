@@ -4,13 +4,17 @@ import sqlite3
 import pytest
 
 from data.db import (
+    create_hotspot,
+    get_all_hotspots,
     get_all_influencers,
     get_all_products,
+    get_hotspot,
     get_influencer,
     get_influencers_by_ids,
     get_product,
     init_db,
     record_match,
+    set_hotspot_enabled,
     upsert_influencers,
     upsert_products,
 )
@@ -64,7 +68,7 @@ def test_init_db_creates_expected_tables(conn: sqlite3.Connection) -> None:
         row["name"]
         for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
-    assert {"influencer_pool", "product_catalog", "match_records"} <= tables
+    assert {"influencer_pool", "product_catalog", "match_records", "hotspots"} <= tables
 
 
 def test_upsert_and_get_influencers_by_ids(conn: sqlite3.Connection) -> None:
@@ -140,6 +144,43 @@ def test_get_all_products_returns_all_ordered_by_id(conn: sqlite3.Connection) ->
 
 def test_get_all_products_empty_catalog_returns_empty_list(conn: sqlite3.Connection) -> None:
     assert get_all_products(conn) == []
+
+
+def test_create_and_get_hotspot(conn: sqlite3.Connection) -> None:
+    hotspot_id = create_hotspot(conn, "秋天的第一杯奶茶", "情感共鸣类 Hook，适合场景化种草")
+
+    row = get_hotspot(conn, hotspot_id)
+
+    assert row["keyword"] == "秋天的第一杯奶茶"
+    assert row["is_enabled"] == 1
+
+
+def test_get_hotspot_missing_raises_key_error(conn: sqlite3.Connection) -> None:
+    with pytest.raises(KeyError):
+        get_hotspot(conn, 999)
+
+
+def test_get_all_hotspots_returns_all(conn: sqlite3.Connection) -> None:
+    create_hotspot(conn, "热点A", "描述A")
+    create_hotspot(conn, "热点B", "描述B")
+
+    rows = get_all_hotspots(conn)
+
+    assert {row["keyword"] for row in rows} == {"热点A", "热点B"}
+
+
+def test_get_all_hotspots_empty_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert get_all_hotspots(conn) == []
+
+
+def test_set_hotspot_enabled_toggles_flag(conn: sqlite3.Connection) -> None:
+    hotspot_id = create_hotspot(conn, "热点A", "描述A")
+
+    set_hotspot_enabled(conn, hotspot_id, False)
+    assert get_hotspot(conn, hotspot_id)["is_enabled"] == 0
+
+    set_hotspot_enabled(conn, hotspot_id, True)
+    assert get_hotspot(conn, hotspot_id)["is_enabled"] == 1
 
 
 def test_record_match_persists_snapshot(conn: sqlite3.Connection) -> None:

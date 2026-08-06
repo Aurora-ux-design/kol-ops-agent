@@ -8,6 +8,7 @@ from engines.matching.pipeline import product_row_to_profile
 
 from .compliance import check_compliance, load_banned_words
 from .generate import generate_narrative_sections, generate_review_sections, generate_voiceover_sections
+from .hotspots import format_hotspot_context, retrieve_relevant_hotspots
 from .models import ScriptFormat, ScriptGenerationResult, ScriptVariant
 from .templates import render_script
 
@@ -23,7 +24,6 @@ def generate_scripts(
     influencer_id: str,
     target_seconds: int = 30,
     formats: list[ScriptFormat] | None = None,
-    hotspot_context: str | None = None,
 ) -> ScriptGenerationResult:
     formats = formats or list(ScriptFormat)
     banned_words = load_banned_words()
@@ -32,10 +32,14 @@ def generate_scripts(
         product = product_row_to_profile(data_db.get_product(conn, product_id))
         influencer = influencer_row_to_profile(data_db.get_influencer(conn, influencer_id))
 
+    relevant_hotspots = retrieve_relevant_hotspots(product, influencer)
+    hotspot_context = format_hotspot_context(relevant_hotspots)
+
     variants = []
     for fmt in formats:
         raw_sections = _GENERATORS[fmt](product, influencer, target_seconds, hotspot_context)
         applicable_scenario = raw_sections.pop("applicable_scenario")
+        hotspot_reference = raw_sections.pop("hotspot_reference", None) or None
         rendered_text = render_script(fmt, raw_sections)
         compliance_flags = check_compliance(rendered_text, banned_words)
         variants.append(
@@ -45,6 +49,7 @@ def generate_scripts(
                 rendered_text=rendered_text,
                 applicable_scenario=applicable_scenario,
                 compliance_flags=compliance_flags,
+                hotspot_reference=hotspot_reference,
             )
         )
 

@@ -25,15 +25,15 @@ def _ensure_env_from_secrets() -> None:
 @st.cache_resource
 def _ensure_seeded() -> None:
     # 云端是全新环境，data/kol_ops.db 和 data/chroma/ 都没提交到仓库（故意的，见 .gitignore）。
-    # 第一次有人打开应用时，检测到商品目录是空的就自动跑一遍 seed，本地已经 seed 过的话这里直接跳过。
-    # 用 st.cache_resource 包一层，保证这个检测+跑 seed 的过程每个进程只执行一次，不会每次翻页都重跑。
+    # 每次进程启动都跑一遍 seed（达人/商品是 upsert 幂等的，热点按关键词去重），
+    # 这样以后往 data/mock/*.csv 里加新数据，已经 seed 过的环境重启一次也能自动补上，
+    # 不用每次都手动判断"是不是第一次"。用 st.cache_resource 包一层，保证每个进程只跑一次，
+    # 不会每次翻页都重新执行。
     from data import seed as data_seed
 
     with closing(data_db.get_connection()) as conn:
         data_db.init_db(conn)
-        already_seeded = len(data_db.get_all_products(conn)) > 0
-    if not already_seeded:
-        data_seed.seed()
+    data_seed.seed()
 
 
 def bootstrap() -> None:

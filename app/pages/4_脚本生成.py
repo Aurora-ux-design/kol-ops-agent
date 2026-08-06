@@ -51,3 +51,5 @@ if st.button("生成脚本", type="primary"):
             with st.container(border=True):
                 st.text(variant.rendered_text)
             st.caption(f"适用场景：{variant.applicable_scenario}")
+            if variant.hotspot_reference:
+                st.caption(f"🔥 参考热点：{variant.hotspot_reference}")

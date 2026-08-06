@@ -60,6 +60,7 @@ def test_generate_voiceover_sections_returns_parsed_tool_input() -> None:
         "selling_points": ["卖点1", "卖点2"],
         "call_to_action": "下单",
         "applicable_scenario": "适合场景",
+        "hotspot_reference": "",
     }
     with patch(
         "engines.script.generate.create_message", return_value=_tool_use_response(payload)
@@ -70,6 +71,23 @@ def test_generate_voiceover_sections_returns_parsed_tool_input() -> None:
     prompt_content = mock_call.call_args.kwargs["messages"][0]["content"]
     assert "幽默口播、快节奏种草" in prompt_content
     assert "约 20 秒" in prompt_content
+
+
+def test_generate_voiceover_sections_returns_hotspot_reference_when_used() -> None:
+    payload = {
+        "hook": "钩子",
+        "pain_point": "痛点",
+        "selling_points": ["卖点1"],
+        "call_to_action": "下单",
+        "applicable_scenario": "适合场景",
+        "hotspot_reference": "秋天的第一杯奶茶",
+    }
+    with patch("engines.script.generate.create_message", return_value=_tool_use_response(payload)):
+        result = generate_voiceover_sections(
+            _product(), _influencer(), hotspot_context="秋天的第一杯奶茶——情感共鸣类 Hook"
+        )
+
+    assert result["hotspot_reference"] == "秋天的第一杯奶茶"
 
 
 def test_generate_voiceover_sections_coerces_json_array_string_selling_points() -> None:
