@@ -60,9 +60,27 @@ CREATE TABLE IF NOT EXISTS hotspots (
     keyword TEXT NOT NULL,
     description TEXT NOT NULL,
     is_enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    source_url TEXT,
+    raw_note TEXT
 );
 """
+
+# hotspots 表后来加了 source_url/raw_note 两列。CREATE TABLE IF NOT EXISTS 对已经存在的表不生效，
+# 已经 seed 过的本地/云端数据库要靠这个显式迁移把新列补上，不会丢已有数据
+_HOTSPOT_MIGRATION_COLUMNS = {
+    "source_url": "TEXT",
+    "raw_note": "TEXT",
+}
+
+
+def _migrate_hotspots_columns(conn: sqlite3.Connection) -> None:
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(hotspots)").fetchall()}
+    for column, column_type in _HOTSPOT_MIGRATION_COLUMNS.items():
+        if column not in existing_columns:
+            conn.execute(f"ALTER TABLE hotspots ADD COLUMN {column} {column_type}")
+    conn.commit()
+
 
 _INFLUENCER_COLUMNS = [
     "influencer_id",
@@ -105,6 +123,7 @@ def get_connection(db_path: str | Path = DB_PATH) -> sqlite3.Connection:
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
     conn.commit()
+    _migrate_hotspots_columns(conn)
 
 
 def upsert_influencers(conn: sqlite3.Connection, rows: list[dict]) -> None:
@@ -168,10 +187,19 @@ def get_all_products(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute("SELECT * FROM product_catalog ORDER BY product_id").fetchall()
 
 
-def create_hotspot(conn: sqlite3.Connection, keyword: str, description: str) -> int:
+def create_hotspot(
+    conn: sqlite3.Connection,
+    keyword: str,
+    description: str,
+    source_url: str | None = None,
+    raw_note: str | None = None,
+) -> int:
     cursor = conn.execute(
-        "INSERT INTO hotspots (keyword, description, is_enabled, created_at) VALUES (?, ?, 1, ?)",
-        (keyword, description, datetime.now().isoformat()),
+        """
+        INSERT INTO hotspots (keyword, description, is_enabled, created_at, source_url, raw_note)
+        VALUES (?, ?, 1, ?, ?, ?)
+        """,
+        (keyword, description, datetime.now().isoformat(), source_url, raw_note),
     )
     conn.commit()
     return cursor.lastrowid

@@ -34,3 +34,5 @@ class HotspotEntry:
     description: str
     is_enabled: bool
     created_at: str
+    source_url: str | None = None
+    raw_note: str | None = None

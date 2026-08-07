@@ -20,6 +20,8 @@ def _row_to_hotspot(row: sqlite3.Row) -> HotspotEntry:
         description=row["description"],
         is_enabled=bool(row["is_enabled"]),
         created_at=row["created_at"],
+        source_url=row["source_url"],
+        raw_note=row["raw_note"],
     )
 
 
@@ -37,10 +39,14 @@ def _sync_chroma(entry: HotspotEntry, embedding_function: EmbeddingFunction | No
 
 
 def create_hotspot(
-    keyword: str, description: str, embedding_function: EmbeddingFunction | None = None
+    keyword: str,
+    description: str,
+    source_url: str | None = None,
+    raw_note: str | None = None,
+    embedding_function: EmbeddingFunction | None = None,
 ) -> HotspotEntry:
     with closing(data_db.get_connection()) as conn:
-        hotspot_id = data_db.create_hotspot(conn, keyword, description)
+        hotspot_id = data_db.create_hotspot(conn, keyword, description, source_url, raw_note)
         row = data_db.get_hotspot(conn, hotspot_id)
     entry = _row_to_hotspot(row)
     _sync_chroma(entry, embedding_function)

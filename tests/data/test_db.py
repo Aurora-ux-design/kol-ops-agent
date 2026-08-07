@@ -160,6 +160,53 @@ def test_get_hotspot_missing_raises_key_error(conn: sqlite3.Connection) -> None:
         get_hotspot(conn, 999)
 
 
+def test_create_hotspot_with_source_url_and_raw_note(conn: sqlite3.Connection) -> None:
+    hotspot_id = create_hotspot(
+        conn,
+        "反问句钩子",
+        "开头用夸张反问句抓注意力",
+        source_url="https://www.xiaohongshu.com/explore/abc123",
+        raw_note="刷到好几个美妆达人开头都用很夸张的反问句，效果好像不错",
+    )
+
+    row = get_hotspot(conn, hotspot_id)
+
+    assert row["source_url"] == "https://www.xiaohongshu.com/explore/abc123"
+    assert row["raw_note"] == "刷到好几个美妆达人开头都用很夸张的反问句，效果好像不错"
+
+
+def test_create_hotspot_without_source_url_defaults_to_none(conn: sqlite3.Connection) -> None:
+    hotspot_id = create_hotspot(conn, "热点A", "描述A")
+
+    row = get_hotspot(conn, hotspot_id)
+
+    assert row["source_url"] is None
+    assert row["raw_note"] is None
+
+
+def test_init_db_migrates_hotspots_missing_columns() -> None:
+    # 模拟已经 seed 过、还没有 source_url/raw_note 两列的旧数据库
+    connection = sqlite3.connect(":memory:")
+    connection.row_factory = sqlite3.Row
+    connection.execute(
+        """
+        CREATE TABLE hotspots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT NOT NULL,
+            description TEXT NOT NULL,
+            is_enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    connection.commit()
+
+    init_db(connection)
+
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(hotspots)").fetchall()}
+    assert {"source_url", "raw_note"} <= columns
+
+
 def test_get_all_hotspots_returns_all(conn: sqlite3.Connection) -> None:
     create_hotspot(conn, "热点A", "描述A")
     create_hotspot(conn, "热点B", "描述B")
