@@ -37,6 +37,8 @@
 
 匹配模型方案（双塔 + 外积 + CNN，含特征工程、训练验证与 baseline 对比计划，目前处于设计阶段）见 [`docs/two-tower-matching-model.md`](./docs/two-tower-matching-model.md)。
 
+评测方案（评测集设计、指标、标注规范、bad case 归类与迭代流程）见 [`docs/evaluation-plan.md`](./docs/evaluation-plan.md)。
+
 ## 几个值得展开讲的设计判断
 
 - **钱的计算不经过 LLM**：LLM 只负责"自然语言→结构化参数"和"数字→人话"，中间的算术部分全部走确定性 Python 公式，保证零误差。
