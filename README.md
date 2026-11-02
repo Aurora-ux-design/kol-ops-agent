@@ -35,6 +35,8 @@
 
 完整设计细节（包括匹配权重、评估方法论、异常检测规则、飞书集成方案等）见 [`docs/PRD.md`](./docs/PRD.md)。
 
+匹配模型方案（双塔 + 外积 + CNN，含特征工程、训练验证与 baseline 对比计划，目前处于设计阶段）见 [`docs/two-tower-matching-model.md`](./docs/two-tower-matching-model.md)。
+
 ## 几个值得展开讲的设计判断
 
 - **钱的计算不经过 LLM**：LLM 只负责"自然语言→结构化参数"和"数字→人话"，中间的算术部分全部走确定性 Python 公式，保证零误差。
