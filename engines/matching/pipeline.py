@@ -23,6 +23,7 @@ from .formulas import (
     score_schedule_availability,
     semantic_similarity_to_score,
 )
+from .history import format_campaign_context, retrieve_similar_campaign
 from .models import DimensionScore, MatchCandidate, MatchResult, ProductProfile
 
 _WEIGHTS_CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "matching_weights.json"
@@ -154,13 +155,24 @@ def match_influencers(
             )
 
         top_candidates = rank_candidates(candidates, top_n=top_n)
-        reasons = explain_matches(product, top_candidates)
+
+        influencer_by_id = {i.influencer_id: i for i, _, _ in coarse_candidates}
+        historical_reference_by_id: dict[str, str] = {}
+        for candidate in top_candidates:
+            influencer = influencer_by_id[candidate.influencer_id]
+            campaign = retrieve_similar_campaign(product, influencer)
+            context = format_campaign_context(campaign, candidate.influencer_id)
+            if context:
+                historical_reference_by_id[candidate.influencer_id] = context
+
+        reasons = explain_matches(product, top_candidates, historical_reference_by_id)
         final_candidates = tuple(
             MatchCandidate(
                 influencer_id=c.influencer_id,
                 dimension_scores=c.dimension_scores,
                 weighted_total=c.weighted_total,
                 reason=reasons.get(c.influencer_id),
+                historical_reference=historical_reference_by_id.get(c.influencer_id),
             )
             for c in top_candidates
         )
@@ -183,6 +195,7 @@ def match_influencers(
                     ],
                     "weighted_total": c.weighted_total,
                     "reason": c.reason,
+                    "historical_reference": c.historical_reference,
                 }
                 for c in result.candidates
             ],

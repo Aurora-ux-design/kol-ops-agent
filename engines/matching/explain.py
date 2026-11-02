@@ -40,15 +40,24 @@ _EXPLAIN_SYSTEM_PROMPT = (
 )
 
 
-def _format_candidate_facts(candidate: MatchCandidate) -> str:
+def _format_candidate_facts(candidate: MatchCandidate, campaign_context: str | None = None) -> str:
     lines = [f"达人 {candidate.influencer_id}（总分 {candidate.weighted_total:.1f}）："]
     for dim in candidate.dimension_scores:
         lines.append(f"- {dim.name}：{dim.score:.1f} 分（{dim.detail}）")
+    if campaign_context:
+        lines.append(f"- 历史合作参考：{campaign_context}")
     return "\n".join(lines)
 
 
-def explain_matches(product: ProductProfile, candidates: list[MatchCandidate]) -> dict[str, str]:
-    facts_block = "\n\n".join(_format_candidate_facts(c) for c in candidates)
+def explain_matches(
+    product: ProductProfile,
+    candidates: list[MatchCandidate],
+    campaign_context_by_id: dict[str, str] | None = None,
+) -> dict[str, str]:
+    campaign_context_by_id = campaign_context_by_id or {}
+    facts_block = "\n\n".join(
+        _format_candidate_facts(c, campaign_context_by_id.get(c.influencer_id)) for c in candidates
+    )
     response = create_message(
         system=_EXPLAIN_SYSTEM_PROMPT,
         messages=[

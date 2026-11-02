@@ -19,6 +19,7 @@ def seed() -> None:
     influencer_rows = _read_csv(MOCK_DIR / "influencers.csv")
     product_rows = _read_csv(MOCK_DIR / "products.csv")
     hotspot_rows = _read_csv(MOCK_DIR / "hotspots.csv")
+    campaign_rows = _read_csv(MOCK_DIR / "historical_campaigns.csv")
 
     conn = db.get_connection()
     db.init_db(conn)
@@ -49,9 +50,47 @@ def seed() -> None:
         hotspot_texts = [f"{row['keyword']} {row['description']}" for row in new_hotspot_rows]
         vector_store.upsert_texts(hotspot_collection, hotspot_ids, hotspot_texts)
 
+    # 历史合作记录也没有天然业务主键，按 (product_id, influencer_id, campaign_date) 组合去重
+    existing_campaign_keys = {
+        (row["product_id"], row["influencer_id"], row["campaign_date"])
+        for row in db.get_all_historical_campaigns(conn)
+    }
+    new_campaign_rows = [
+        row
+        for row in campaign_rows
+        if (row["product_id"], row["influencer_id"], row["campaign_date"]) not in existing_campaign_keys
+    ]
+    if new_campaign_rows:
+        product_by_id = {row["product_id"]: row for row in product_rows}
+        influencer_by_id = {row["influencer_id"]: row for row in influencer_rows}
+        campaign_collection = vector_store.get_collection(client, "historical_campaigns")
+        campaign_ids = []
+        campaign_texts = []
+        for row in new_campaign_rows:
+            campaign_id = db.create_historical_campaign(
+                conn,
+                row["product_id"],
+                row["influencer_id"],
+                row["campaign_date"],
+                row["actual_gmv"],
+                row["actual_roi"],
+                row["outcome_note"],
+            )
+            product = product_by_id.get(row["product_id"])
+            influencer = influencer_by_id.get(row["influencer_id"])
+            text_parts = []
+            if product:
+                text_parts.append(f"{product['category']} {product['tone']}")
+            if influencer:
+                text_parts.append(influencer["content_style"])
+            text_parts.append(row["outcome_note"])
+            campaign_ids.append(str(campaign_id))
+            campaign_texts.append(" ".join(text_parts))
+        vector_store.upsert_texts(campaign_collection, campaign_ids, campaign_texts)
+
     print(
         f"已写入 {len(influencer_rows)} 个达人、{len(product_rows)} 个商品、"
-        f"{len(new_hotspot_rows)} 条新热点，并生成 embedding。"
+        f"{len(new_hotspot_rows)} 条新热点、{len(new_campaign_rows)} 条新历史合作记录，并生成 embedding。"
     )
 
 

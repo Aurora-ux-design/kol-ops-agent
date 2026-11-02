@@ -69,3 +69,16 @@ def test_explain_matches_prompt_contains_exact_scores() -> None:
     prompt_content = mock_call.call_args.kwargs["messages"][0]["content"]
     assert "82.0 分" in prompt_content
     assert "75.5" in prompt_content
+
+
+def test_explain_matches_includes_campaign_context_when_given() -> None:
+    mocked_response = _tool_use_response({"reasons": [{"influencer_id": "INF001", "reason": "x"}]})
+    with patch("engines.matching.explain.create_message", return_value=mocked_response) as mock_call:
+        explain_matches(
+            _product(),
+            [_candidate("INF001")],
+            campaign_context_by_id={"INF001": "该达人此前带过同类商品：GMV 92000 元、ROI 3.4"},
+        )
+
+    prompt_content = mock_call.call_args.kwargs["messages"][0]["content"]
+    assert "该达人此前带过同类商品：GMV 92000 元、ROI 3.4" in prompt_content

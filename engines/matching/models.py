@@ -48,6 +48,7 @@ class MatchCandidate:
     dimension_scores: tuple[DimensionScore, ...]
     weighted_total: Decimal
     reason: str | None = None  # 只有进入 Top N 的候选才会回填
+    historical_reference: str | None = None  # 检索到的相似历史合作案例，确定性查出来的，不靠 LLM 回填
 
 
 @dataclass(frozen=True)
@@ -55,3 +56,14 @@ class MatchResult:
     product_id: str
     requested_date: date
     candidates: tuple[MatchCandidate, ...]  # 已按 weighted_total 排序，长度即 top_n
+
+
+@dataclass(frozen=True)
+class HistoricalCampaign:
+    campaign_id: str
+    product_id: str
+    influencer_id: str
+    campaign_date: str
+    actual_gmv: Decimal
+    actual_roi: Decimal
+    outcome_note: str

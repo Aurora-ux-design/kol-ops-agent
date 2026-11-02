@@ -44,6 +44,8 @@ if st.button("开始匹配", type="primary"):
                 st.caption(f"总分 {candidate.weighted_total:.1f}")
             with reason_col:
                 st.write(candidate.reason or "（没有生成理由）")
+                if candidate.historical_reference:
+                    st.caption(f"📚 {candidate.historical_reference}")
             with st.expander("查看 5 维度打分依据"):
                 for dim in candidate.dimension_scores:
                     st.write(f"- **{dim.name}**：{dim.score:.1f} 分 —— {dim.detail}")

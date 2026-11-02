@@ -4,10 +4,13 @@ import sqlite3
 import pytest
 
 from data.db import (
+    create_historical_campaign,
     create_hotspot,
+    get_all_historical_campaigns,
     get_all_hotspots,
     get_all_influencers,
     get_all_products,
+    get_historical_campaign,
     get_hotspot,
     get_influencer,
     get_influencers_by_ids,
@@ -68,7 +71,13 @@ def test_init_db_creates_expected_tables(conn: sqlite3.Connection) -> None:
         row["name"]
         for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
-    assert {"influencer_pool", "product_catalog", "match_records", "hotspots"} <= tables
+    assert {
+        "influencer_pool",
+        "product_catalog",
+        "match_records",
+        "hotspots",
+        "historical_campaigns",
+    } <= tables
 
 
 def test_upsert_and_get_influencers_by_ids(conn: sqlite3.Connection) -> None:
@@ -228,6 +237,42 @@ def test_set_hotspot_enabled_toggles_flag(conn: sqlite3.Connection) -> None:
 
     set_hotspot_enabled(conn, hotspot_id, True)
     assert get_hotspot(conn, hotspot_id)["is_enabled"] == 1
+
+
+def test_create_and_get_historical_campaign(conn: sqlite3.Connection) -> None:
+    campaign_id = create_historical_campaign(
+        conn,
+        product_id="P001",
+        influencer_id="INF001",
+        campaign_date="2026-05-12",
+        actual_gmv="92000",
+        actual_roi="3.4",
+        outcome_note="完播率高于均值",
+    )
+
+    row = get_historical_campaign(conn, campaign_id)
+
+    assert row["product_id"] == "P001"
+    assert row["influencer_id"] == "INF001"
+    assert row["actual_gmv"] == "92000"
+
+
+def test_get_historical_campaign_missing_raises_key_error(conn: sqlite3.Connection) -> None:
+    with pytest.raises(KeyError):
+        get_historical_campaign(conn, 999)
+
+
+def test_get_all_historical_campaigns_returns_all(conn: sqlite3.Connection) -> None:
+    create_historical_campaign(conn, "P001", "INF001", "2026-05-12", "92000", "3.4", "备注A")
+    create_historical_campaign(conn, "P002", "INF005", "2026-04-20", "310000", "5.2", "备注B")
+
+    rows = get_all_historical_campaigns(conn)
+
+    assert {row["product_id"] for row in rows} == {"P001", "P002"}
+
+
+def test_get_all_historical_campaigns_empty_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert get_all_historical_campaigns(conn) == []
 
 
 def test_record_match_persists_snapshot(conn: sqlite3.Connection) -> None:

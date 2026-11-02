@@ -64,6 +64,17 @@ CREATE TABLE IF NOT EXISTS hotspots (
     source_url TEXT,
     raw_note TEXT
 );
+
+CREATE TABLE IF NOT EXISTS historical_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id TEXT NOT NULL,
+    influencer_id TEXT NOT NULL,
+    campaign_date TEXT NOT NULL,
+    actual_gmv TEXT NOT NULL,
+    actual_roi TEXT NOT NULL,
+    outcome_note TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 """
 
 # hotspots 表后来加了 source_url/raw_note 两列。CREATE TABLE IF NOT EXISTS 对已经存在的表不生效，
@@ -219,6 +230,48 @@ def get_all_hotspots(conn: sqlite3.Connection) -> list[sqlite3.Row]:
 def set_hotspot_enabled(conn: sqlite3.Connection, hotspot_id: int | str, enabled: bool) -> None:
     conn.execute("UPDATE hotspots SET is_enabled = ? WHERE id = ?", (1 if enabled else 0, hotspot_id))
     conn.commit()
+
+
+def create_historical_campaign(
+    conn: sqlite3.Connection,
+    product_id: str,
+    influencer_id: str,
+    campaign_date: str,
+    actual_gmv: str,
+    actual_roi: str,
+    outcome_note: str,
+) -> int:
+    cursor = conn.execute(
+        """
+        INSERT INTO historical_campaigns (
+            product_id, influencer_id, campaign_date, actual_gmv, actual_roi, outcome_note, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            product_id,
+            influencer_id,
+            campaign_date,
+            actual_gmv,
+            actual_roi,
+            outcome_note,
+            datetime.now().isoformat(),
+        ),
+    )
+    conn.commit()
+    return cursor.lastrowid
+
+
+def get_historical_campaign(conn: sqlite3.Connection, campaign_id: int | str) -> sqlite3.Row:
+    row = conn.execute(
+        "SELECT * FROM historical_campaigns WHERE id = ?", (campaign_id,)
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"未找到历史合作记录：{campaign_id}")
+    return row
+
+
+def get_all_historical_campaigns(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM historical_campaigns ORDER BY campaign_date DESC").fetchall()
 
 
 def record_match(
