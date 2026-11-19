@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      # 只装测试真正需要的子集：不装 streamlit（UI）和 sentence-transformers（450MB 权重），
+      # 向量层测试用的是 fake embedding function。
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest openai python-dotenv jinja2 chromadb
+
+      - name: Run tests
+        run: python -m pytest -q
