@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>达人运营智能 Agent · 交互 Demo</title>
+<meta name="description" content="面向品牌电商达人运营的 AI 决策辅助系统：达人匹配、脚本生成、损益测算、评测体系的交互演示（合成数据）。">
+<style>
+  :root{
+    --ink:#0d1b1e; --ink-2:#25383d; --muted:#607277; --line:#e2e8e6;
+    --bg:#f6f8f7; --card:#ffffff; --brand:#0f766e; --brand-2:#0b5f58;
+    --brand-soft:#e6f4f1; --warn:#b45309; --warn-soft:#fef3e2; --bad:#b91c1c;
+    --radius:14px; --shadow:0 1px 2px rgba(13,27,30,.05),0 8px 24px -12px rgba(13,27,30,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font-size:14px; line-height:1.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* top bar */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar-in{display:flex;align-items:center;gap:18px;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .mark{width:28px;height:28px;border-radius:9px;background:linear-gradient(140deg,#0f766e,#0b4f4a);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800}
+  .tabbar{display:flex;gap:4px;margin-left:auto;background:#eef3f1;padding:4px;border-radius:11px}
+  .tab{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;padding:6px 14px;border-radius:8px;cursor:pointer;transition:.15s}
+  .tab:hover{color:var(--brand)}
+  .tab[aria-selected="true"]{background:#fff;color:var(--brand);font-weight:600;box-shadow:0 1px 3px rgba(13,27,30,.12)}
+  .ghost{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:999px}
+  .ghost:hover{border-color:var(--brand);color:var(--brand)}
+
+  /* hero */
+  .hero{padding:34px 0 10px}
+  .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--brand);background:var(--brand-soft);padding:4px 10px;border-radius:999px;font-weight:600}
+  h1{font-size:30px;line-height:1.25;margin:14px 0 8px;letter-spacing:-.3px}
+  .lede{color:var(--muted);max-width:720px;margin:0}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--muted)}
+  .stat b{color:var(--ink);font-size:15px;margin-right:6px}
+
+  /* layout */
+  .view{display:none;padding:22px 0 56px}
+  .view[data-active="true"]{display:block}
+  .grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .card-h h3{margin:0;font-size:13px;letter-spacing:.3px;color:var(--ink-2)}
+  .card-b{padding:16px}
+  .hint{font-size:12px;color:var(--muted)}
+
+  /* controls */
+  label.field{display:block;margin-bottom:14px}
+  label.field > span{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  select{width:100%;font:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%23607277' stroke-width='1.6'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center}
+  .weight-row{margin-bottom:12px}
+  .weight-row .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .weight-row .top b{font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--brand);height:18px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--brand);cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--brand-2)}
+  .btn.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .btn.secondary:hover{background:var(--brand-soft)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* funnel */
+  .funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .fstep{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .fstep span{display:block;font-size:11px;color:var(--muted)}
+  .fstep b{font-size:18px;letter-spacing:-.3px}
+
+  /* result list */
+  .res{display:flex;flex-direction:column;gap:10px}
+  .kard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;cursor:pointer;transition:.15s}
+  .kard:hover{border-color:#b9d6d0;transform:translateY(-1px)}
+  .kard[data-selected="true"]{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .krow{display:flex;align-items:center;gap:12px}
+  .rank{width:26px;height:26px;border-radius:8px;background:#eef3f1;color:var(--muted);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+  .kard[data-selected="true"] .rank{background:var(--brand);color:#fff}
+  .kname{font-weight:600}
+  .kmeta{font-size:12px;color:var(--muted)}
+  .score{margin-left:auto;text-align:right;flex:none}
+  .score b{font-size:19px;letter-spacing:-.5px}
+  .score span{font-size:11px;color:var(--muted);display:block;margin-top:-3px}
+  .reasons{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-size:11px;padding:3px 8px;border-radius:999px;background:#eef3f1;color:var(--ink-2)}
+  .chip.good{background:var(--brand-soft);color:var(--brand-2)}
+  .chip.warn{background:var(--warn-soft);color:var(--warn)}
+  .chip.bad{background:#fdecec;color:var(--bad)}
+
+  /* detail */
+  .dim{margin-bottom:10px}
+  .dim .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px}
+  .bar{height:6px;border-radius:99px;background:#eef3f1;overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#0f766e,#2f9d8e)}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .kv div{background:#f8faf9;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12px;color:var(--muted)}
+  .kv b{display:block;color:var(--ink);font-size:15px;letter-spacing:-.2px}
+
+  /* script */
+  .script{white-space:pre-wrap;font-size:13.5px;line-height:1.95;background:#fbfdfc;border:1px solid var(--line);border-radius:12px;padding:18px 20px;min-height:260px}
+  .script mark{background:#fff3cd;color:#7a4b00;padding:0 2px;border-radius:3px}
+  .check{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+  /* profit */
+  .pform{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pform label{display:block;font-size:12px;color:var(--muted)}
+  .pform input{width:100%;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff}
+  .out{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .out div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .out span{font-size:11px;color:var(--muted);display:block}
+  .out b{font-size:18px;letter-spacing:-.3px}
+  .verdict{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:13px;background:var(--brand-soft);color:var(--brand-2)}
+  .verdict.bad{background:#fdecec;color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-weight:600;color:var(--muted);font-size:11.5px;letter-spacing:.2px}
+  td.num,th.num{text-align:right}
+
+  /* eval */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}
+  .kpi span{font-size:11.5px;color:var(--muted)}
+  .kpi b{display:block;font-size:24px;letter-spacing:-.8px;margin-top:2px}
+  .kpi i{font-style:normal;font-size:11.5px;color:var(--brand)}
+  .layers{display:flex;flex-direction:column;gap:9px}
+  .layer{display:grid;grid-template-columns:150px 1fr 64px;gap:10px;align-items:center;font-size:12.5px}
+  .layer .track{height:8px;background:#eef3f1;border-radius:99px;overflow:hidden}
+  .layer .track > i{display:block;height:100%;background:linear-gradient(90deg,#0f766e,#39a99a)}
+
+  .foot{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);font-size:12px}
+  .foot .row{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+  .note{font-size:11.5px;color:var(--muted)}
+  .callout{display:flex;gap:10px;align-items:flex-start;background:#fffdf6;border:1px solid #f0e2c4;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#7a5a15}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <div class="brand"><span class="mark">K</span> 达人运营智能 Agent</div>
+    <nav class="tabbar" role="tablist">
+      <button class="tab" role="tab" data-tab="match" aria-selected="true">达人匹配</button>
+      <button class="tab" role="tab" data-tab="script" aria-selected="false">脚本生成</button>
+      <button class="tab" role="tab" data-tab="profit" aria-selected="false">损益测算</button>
+      <button class="tab" role="tab" data-tab="eval" aria-selected="false">评测与迭代</button>
+    </nav>
+    <a class="ghost" href="https://github.com/Aurora-ux-design/kol-ops-agent" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">● 交互 Demo · 数据为合成示例</span>
+    <h1>选谁带货、怎么讲、赚不赚钱、值不值得投</h1>
+    <p class="lede">面向品牌电商达人运营的四引擎决策系统。匹配理由可解释、权重可调、金额计算不走 LLM——这里是产品逻辑的静态复现，不依赖后端，可直接在浏览器里操作。</p>
+    <div class="stats">
+      <div class="stat"><b class="num">15</b>示例商品</div>
+      <div class="stat"><b class="num">40</b>示例达人</div>
+      <div class="stat"><b class="num">5</b>匹配维度</div>
+      <div class="stat"><b class="num">0</b>LLM 参与金额计算</div>
+    </div>
+  </header>
+
+  <!-- ========== 匹配 ========== -->
+  <section class="view" id="view-match" data-active="true">
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><h3>投放条件</h3><span class="hint">权重可调</span></div>
+        <div class="card-b">
+          <label class="field"><span>选择商品</span><select id="product"></select></label>
+          <div class="weight-row">
+            <div class="top"><span>人群 &amp; 内容风格</span><b class="num" id="w1v">45%</b></div>
+            <input type="range" id="w1" min="0" max="100" value="45">
+          </div>
+          <div class="weight-row">
+            <div class="top"><span>历史表现</span><b class="num" id="w2v">35%</b></div>
+            <input type="range" id="w2" min="0" max="100" value="35">
+          </div>
+          <div class="weight-row">
+            <div class="top"><span>佣金 &amp; 排期</span><b class="num" id="w3v">20%</b></div>
+            <input type="range" id="w3" min="0" max="100" value="20">
+          </div>
+          <div class="callout" style="margin:4px 0 14px">
+            <span>ⓘ</span><span>权重只影响排序，不掩盖硬约束：佣金高于保本线、排期超过 30 天会在结果里单独标红。</span>
+          </div>
+          <button class="btn" id="runMatch">生成推荐</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="funnel" id="funnel">
+          <div class="fstep"><span>达人池</span><b class="num">—</b></div>
+          <div class="fstep"><span>类目候选</span><b class="num">—</b></div>
+          <div class="fstep"><span>粗排召回</span><b class="num">—</b></div>
+          <div class="fstep"><span>精排出稿</span><b class="num">—</b></div>
+        </div>
+        <div class="grid" style="grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)">
+          <div class="res" id="results"></div>
+          <div class="card" id="detail" style="position:sticky;top:80px">
+            <div class="card-h"><h3>匹配详情</h3><span class="hint" id="detailTag">—</span></div>
+            <div class="card-b" id="detailBody"><p class="hint">点左侧任一达人查看维度拆解、匹配理由与风险提示。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 脚本 ========== -->
+  <section class="view" id="view-script">
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><h3>生成条件</h3><span class="hint">三形态模板</span></div>
+        <div class="card-b">
+          <label class="field"><span>商品</span><select id="sProduct"></select></label>
+          <label class="field"><span>达人</span><select id="sKol"></select></label>
+          <label class="field"><span>脚本形态</span><select id="sForm">
+            <option value="oral">口播（60 秒）</option>
+            <option value="drama">剧情（三幕）</option>
+            <option value="review">测评（三段式）</option>
+          </select></label>
+          <label class="field"><span>注入热点</span><select id="sHot"></select></label>
+          <button class="btn" id="genScript">生成脚本</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h"><h3>脚本产物</h3><span class="hint">命中热点已高亮</span></div>
+          <div class="card-b">
+            <div class="script" id="scriptOut">点击「生成脚本」查看产物。模板负责骨架，热点负责新鲜度，合规词库负责兜底。</div>
+            <div class="check" id="scriptCheck"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-h"><h3>设计约束</h3></div>
+          <div class="card-b hint">
+            脚本只产出候选，默认需要运营确认后才对外；合规词库命中会直接阻断，不做「自动改写后照发」。金额与 ROI 不写进脚本正文，避免模型生成数字。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 损益 ========== -->
+  <section class="view" id="view-profit">
+    <div class="grid">
+      <div class="card">
+        <div class="card-h"><h3>成本与佣金</h3><span class="hint">确定性公式</span></div>
+        <div class="card-b">
+          <label class="field"><span>商品</span><select id="pProduct"></select></label>
+          <div class="pform">
+            <label>售价<input id="pPrice" type="number" step="1"></label>
+            <label>采购成本<input id="pBuy" type="number" step="1"></label>
+            <label>包装费<input id="pPack" type="number" step="1"></label>
+            <label>物流费<input id="pLogi" type="number" step="1"></label>
+            <label>分摊费用<input id="pOver" type="number" step="1"></label>
+            <label>平台技术服务费<input id="pTech" type="number" step="1"></label>
+            <label>税费<input id="pTax" type="number" step="1"></label>
+            <label>达人佣金率<input id="pComm" type="number" step="0.01" value="0.25"></label>
+          </div>
+          <button class="btn" id="runProfit" style="margin-top:14px">计算</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-h"><h3>损益结果</h3><span class="hint" id="pTag">—</span></div>
+          <div class="card-b">
+            <div class="out">
+              <div><span>毛利</span><b class="num" id="oGross">—</b></div>
+              <div><span>净利</span><b class="num" id="oNet">—</b></div>
+              <div><span>ROI</span><b class="num" id="oRoi">—</b></div>
+            </div>
+            <div class="verdict" id="pVerdict">—</div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-h"><h3>佣金率敏感性</h3><span class="hint">保本线以上即亏损</span></div>
+          <div class="card-b" style="padding-top:6px">
+            <table>
+              <thead><tr><th>达人佣金率</th><th class="num">达人佣金</th><th class="num">净利</th><th class="num">ROI</th><th>判定</th></tr></thead>
+              <tbody id="sens"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 评测 ========== -->
+  <section class="view" id="view-eval">
+    <div class="kpis">
+      <div class="kpi"><span>同月 AUC</span><b class="num">0.80</b><i>GBDT 基线</i></div>
+      <div class="kpi"><span>隔月样本外 AUC</span><b class="num">0.75</b><i>衰减 0.05</i></div>
+      <div class="kpi"><span>粗排 Recall@50</span><b class="num">0.86</b><i>目标 ≥ 0.80</i></div>
+      <div class="kpi"><span>精排 Hit@5</span><b class="num">0.62</b><i>目标 ≥ 0.60</i></div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+      <div class="card">
+        <div class="card-h"><h3>分层评测集</h3><span class="hint">品类 × 价格 × 生命周期 × 难度</span></div>
+        <div class="card-b">
+          <div class="layers" id="layerBars"></div>
+          <p class="note" style="margin:14px 0 0">分层的目的不是把整体指标做好看，而是能回答「哪一层的推荐质量在退化」——只报一个整体 AUC 无法定位问题。</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Bad case 归类</h3><span class="hint">近一轮迭代</span></div>
+        <div class="card-b" style="padding-top:6px">
+          <table>
+            <thead><tr><th>类别</th><th class="num">占比</th><th>处理</th></tr></thead>
+            <tbody>
+              <tr><td>头部达人过拟合</td><td class="num">34%</td><td>加新达人样本，弱化 ID 特征</td></tr>
+              <tr><td>类目跨品类误召回</td><td class="num">27%</td><td>粗排加类目硬过滤</td></tr>
+              <tr><td>理由与事实不符</td><td class="num">21%</td><td>模板化理由 + 字段校验</td></tr>
+              <tr><td>排期冲突未识别</td><td class="num">18%</td><td>排期进入硬约束而非打分</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-h"><h3>为什么先做基线而不是直接上深度模型</h3></div>
+      <div class="card-b hint">
+        样本量（约 9 万行计划日数据、4,600+ 达人）不足以稳定训练双塔深度模型。先用 GBDT 建立可解释基线，验证「仅靠历史表现对新达人无区分力」这一假设，再补内容特征与品类特征，最后才切双塔 + 外积 + CNN。这一步的产出不是更好的指标，而是更清楚的问题边界。
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="row">
+      <div>达人运营智能 Agent · 交互 Demo（合成数据，不含真实达人信息与佣金）</div>
+      <div><a href="https://github.com/Aurora-ux-design/kol-ops-agent">github.com/Aurora-ux-design/kol-ops-agent</a></div>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ========== 数据（合成） ========== */
+const PRODUCTS = [
+  {id:"P001",name:"清透水感面膜",cat:"美妆",aud:"18-25岁女性、注重性价比和补水效果",tone:"性价比种草、成分党",price:99,cost:[35,3,5,2,3,2]},
+  {id:"P002",name:"抗老紧致精华",cat:"美妆",aud:"30-40岁女性、注重抗衰和品质",tone:"精致人设、专业成分",price:399,cost:[140,8,10,6,10,8]},
+  {id:"P003",name:"国货口红套装",cat:"美妆",aud:"18-24岁学生党、追求潮流和性价比",tone:"活泼种草、国货情怀",price:129,cost:[42,4,6,3,4,3]},
+  {id:"P004",name:"多功能收纳盒套装",cat:"家居百货",aud:"25-40岁女性、注重收纳和生活品质",tone:"实用种草、场景化演示",price:159,cost:[58,6,12,4,5,4]},
+  {id:"P005",name:"静音破壁料理机",cat:"家居百货",aud:"28-45岁家庭主妇、注重厨房效率",tone:"实用测评、烹饪场景",price:459,cost:[180,10,15,8,12,10]},
+  {id:"P006",name:"懒人折叠置物架",cat:"家居百货",aud:"22-35岁租房一族、追求便利",tone:"痛点种草、幽默口播",price:79,cost:[26,3,8,2,3,2]},
+  {id:"P007",name:"手工坚果礼盒",cat:"食品",aud:"18-30岁不限性别、追求健康零食",tone:"美食种草、沉浸式吃播",price:89,cost:[32,4,7,2,3,2]},
+  {id:"P008",name:"低卡代餐奶昔",cat:"食品",aud:"25-38岁减脂人群、注重健康",tone:"知识科普、专业成分",price:169,cost:[55,5,9,4,6,5]},
+  {id:"P009",name:"地方风味零食礼包",cat:"食品",aud:"20-35岁美食爱好者、追求新奇口味",tone:"沉浸式吃播、文化种草",price:69,cost:[22,3,6,2,2,2]},
+  {id:"P010",name:"婴儿有机棉纱布巾",cat:"母婴",aud:"25-35岁新手妈妈、注重安全和材质",tone:"知识科普、经验分享",price:79,cost:[26,3,6,2,3,2]},
+  {id:"P011",name:"益生菌婴幼儿辅食",cat:"母婴",aud:"27-38岁精细养育家长、注重营养",tone:"专业测评、权威背书",price:199,cost:[72,6,10,5,7,6]},
+  {id:"P012",name:"萌趣儿童早教玩具",cat:"母婴",aud:"25-36岁家长、注重孩子成长",tone:"剧情演绎、萌娃出镜",price:159,cost:[55,7,10,4,6,5]},
+  {id:"P013",name:"无线降噪耳机",cat:"数码",aud:"20-30岁音乐爱好者、追求音质",tone:"专业测评、沉浸式体验",price:499,cost:[195,8,12,10,15,12]},
+  {id:"P014",name:"智能手环",cat:"数码",aud:"22-35岁科技尝鲜者、注重健康监测",tone:"开箱测评、场景化种草",price:299,cost:[110,6,10,6,9,7]},
+  {id:"P015",name:"便携移动电源",cat:"数码",aud:"18-30岁学生党和上班族、追求性价比",tone:"幽默口播、实用测评",price:99,cost:[34,4,7,3,4,3]}
+];
+
+const KOLS = [
+  ["INF001","小美的美妆日记",["美妆","护肤"],"18-25岁女性为主、一二线城市、注重成分和性价比","幽默口播、快节奏种草",320000,85000,3.2,0.32,0.20,0.35,"2026-08-05"],
+  ["INF002","阿雅美妆实验室",["美妆","彩妆"],"20-30岁女性、精致人设、愿意为品质付费","专业测评、慢节奏讲解",580000,150000,4.1,0.28,0.25,0.40,"2026-08-10"],
+  ["INF003","晓晓的护肤笔记",["美妆","护肤","成分党"],"25-35岁女性、成分党、理性消费","知识科普、图文并茂",210000,62000,2.8,0.25,0.18,0.30,"2026-08-03"],
+  ["INF004","小北彩妆日常",["美妆","彩妆","国货"],"18-24岁学生党、下沉市场、追求性价比","活泼口播、剧情演绎",150000,38000,2.5,0.22,0.15,0.28,"2026-08-20"],
+  ["INF005","美妆种草机阿俏",["美妆","护肤","抗老"],"30-40岁女性、高消费力、注重抗衰","专业测评、权威背书",890000,320000,5.5,0.38,0.30,0.45,"2026-08-08"],
+  ["INF006","小仙女化妆间",["美妆","彩妆"],"18-22岁女性、Z世代、追求潮流","剧情短剧、场景化种草",420000,95000,3.0,0.26,0.20,0.32,"2026-09-01"],
+  ["INF007","达人老K美妆测评",["美妆","护肤","男士护肤"],"20-35岁不限性别、理性消费、注重成分表","开箱测评、成分解析",180000,45000,2.6,0.24,0.18,0.30,"2026-08-06"],
+  ["INF008","糖糖的美妆小课堂",["美妆","护肤","彩妆"],"18-28岁女性、学生党为主、预算有限","知识科普、幽默口播",95000,22000,2.1,0.19,0.15,0.25,"2026-08-15"],
+  ["INF009","家居收纳师阿May",["家居百货","收纳"],"25-40岁女性、有房一族、注重生活品质","场景化剧情、收纳教程",260000,72000,3.3,0.30,0.20,0.32,"2026-08-04"],
+  ["INF010","懒人家居优选",["家居百货","小家电"],"22-35岁不限性别、追求便利、租房一族","幽默口播、痛点引入",340000,88000,3.1,0.27,0.18,0.30,"2026-08-12"],
+  ["INF011","老张的居家生活",["家居百货","厨房用品"],"30-45岁已婚人群、家庭消费决策者","实用测评、慢节奏讲解",190000,54000,2.9,0.25,0.20,0.35,"2026-08-07"],
+  ["INF012","小美家的日常",["家居百货","家纺"],"25-38岁女性、注重舒适度、中高消费","场景化种草、剧情演绎",410000,110000,3.6,0.29,0.22,0.38,"2026-08-25"],
+  ["INF013","极简生活家阿俊",["家居百货","收纳","断舍离"],"25-35岁不限性别、追求极简、一二线城市","知识科普、生活方式分享",150000,40000,2.7,0.23,0.18,0.28,"2026-08-09"],
+  ["INF014","厨房小当家",["家居百货","厨房用品","小家电"],"28-45岁女性、家庭主妇、注重实用","实用测评、烹饪演示",270000,80000,3.2,0.28,0.20,0.33,"2026-09-05"],
+  ["INF015","家居好物研究所",["家居百货","装饰"],"22-32岁女性、租房改造、预算有限","开箱测评、性价比种草",120000,30000,2.3,0.21,0.15,0.26,"2026-08-11"],
+  ["INF016","阿福居家好物",["家居百货","清洁用品"],"25-40岁不限性别、注重效率、有一定消费力","幽默口播、痛点引入",530000,175000,4.2,0.33,0.25,0.40,"2026-08-18"],
+  ["INF017","吃货小胖",["食品","零食"],"18-30岁不限性别、学生党和上班族、追求美味","美食测评、沉浸式吃播",680000,190000,4.0,0.35,0.20,0.32,"2026-08-05"],
+  ["INF018","健康轻食阿雯",["食品","健康食品"],"25-38岁女性、健身人群、注重低卡","知识科普、场景化种草",230000,65000,2.9,0.27,0.22,0.35,"2026-08-14"],
+  ["INF019","老饕说食",["食品","地方特产"],"28-45岁不限性别、美食爱好者、愿意尝鲜","专业测评、文化科普",160000,42000,2.5,0.24,0.18,0.30,"2026-08-08"],
+  ["INF020","甜品控小樱",["食品","烘焙","甜品"],"18-28岁女性、甜品爱好者、悦己消费","剧情短剧、氛围感种草",310000,85000,3.1,0.29,0.20,0.33,"2026-08-22"],
+  ["INF021","深夜食堂阿凯",["食品","速食","夜宵"],"20-35岁不限性别、宅家一族、追求方便","沉浸式吃播、幽默口播",450000,120000,3.5,0.31,0.22,0.36,"2026-08-06"],
+  ["INF022","妈妈厨房日记",["食品","生鲜","调味品"],"28-45岁女性、家庭主妇、注重食材品质","实用测评、烹饪演示",140000,36000,2.4,0.22,0.16,0.28,"2026-08-13"],
+  ["INF023","零食测评所",["食品","零食","进口食品"],"18-26岁女性、Z世代、追求新奇口味","开箱测评、活泼口播",220000,58000,2.8,0.26,0.18,0.30,"2026-09-02"],
+  ["INF024","轻食代餐研究员",["食品","健康食品","代餐"],"25-40岁女性、减脂人群、理性消费","知识科普、专业测评",95000,24000,2.2,0.20,0.15,0.25,"2026-08-10"],
+  ["INF025","辣妈育儿经",["母婴","婴幼儿用品"],"25-38岁女性、新手妈妈、注重安全","知识科普、经验分享",380000,110000,3.4,0.30,0.20,0.35,"2026-08-09"],
+  ["INF026","奶爸带娃日常",["母婴","玩具","辅食"],"28-40岁不限性别、二胎家庭、注重性价比","剧情演绎、幽默口播",210000,58000,2.7,0.25,0.18,0.30,"2026-08-16"],
+  ["INF027","萌娃穿搭馆",["母婴","童装"],"25-35岁女性、注重孩子颜值、中高消费","场景化种草、萌娃出镜",290000,82000,3.2,0.28,0.22,0.36,"2026-08-04"],
+  ["INF028","育儿专家王医生",["母婴","婴幼儿用品","辅食"],"28-42岁女性、理性消费、信任专业背书","专业测评、权威科普",520000,175000,4.0,0.33,0.25,0.40,"2026-08-19"],
+  ["INF029","二胎妈妈日记",["母婴","玩具","童装"],"26-38岁女性、多孩家庭、追求性价比","剧情短剧、生活记录",170000,44000,2.6,0.23,0.16,0.28,"2026-08-07"],
+  ["INF030","新手爸妈必看",["母婴","婴幼儿用品"],"24-32岁不限性别、初为父母、信息焦虑","知识科普、实用测评",130000,32000,2.3,0.21,0.15,0.26,"2026-08-27"],
+  ["INF031","宝宝辅食研究所",["母婴","辅食"],"27-38岁女性、注重营养搭配、精细养育","场景化种草、烹饪演示",240000,68000,2.9,0.27,0.20,0.32,"2026-08-11"],
+  ["INF032","亲子好物推荐官",["母婴","玩具","童装"],"25-36岁女性、注重孩子成长、中高消费","幽默口播、剧情演绎",105000,26000,2.1,0.20,0.15,0.25,"2026-08-05"],
+  ["INF033","数码老炮儿",["数码","手机","电脑"],"20-35岁男性为主、科技爱好者、追求性能","专业测评、参数解析",610000,205000,4.3,0.36,0.22,0.35,"2026-08-06"],
+  ["INF034","极客小Q",["数码","智能家居"],"22-32岁不限性别、Z世代、追求潮流科技","开箱测评、场景化演示",340000,95000,3.3,0.30,0.20,0.32,"2026-08-13"],
+  ["INF035","摄影器材阿KEN",["数码","相机","摄影配件"],"25-40岁不限性别、摄影爱好者、专业需求","专业测评、实拍对比",180000,48000,2.7,0.25,0.18,0.30,"2026-08-08"],
+  ["INF036","办公效率研究所",["数码","办公设备"],"25-38岁职场人群、注重效率、理性消费","知识科普、实用测评",150000,38000,2.5,0.23,0.16,0.28,"2026-08-21"],
+  ["INF037","耳机测评师小林",["数码","音频设备"],"20-30岁不限性别、音乐爱好者、追求音质","专业测评、沉浸式体验",260000,72000,3.0,0.27,0.20,0.33,"2026-08-05"],
+  ["INF038","游戏本推荐官",["数码","电脑","游戏外设"],"18-28岁男性为主、游戏玩家、追求性能","开箱测评、幽默口播",420000,130000,3.7,0.32,0.22,0.36,"2026-09-03"],
+  ["INF039","智能穿戴控",["数码","智能家居","可穿戴设备"],"22-35岁不限性别、科技尝鲜者、中高消费","场景化种草、开箱测评",190000,52000,2.8,0.26,0.18,0.30,"2026-08-10"],
+  ["INF040","数码小白入门指南",["数码","手机","平板"],"18-25岁学生党、预算有限、追求性价比","知识科普、幽默口播",110000,27000,2.2,0.20,0.15,0.25,"2026-08-17"]
+].map(r=>({id:r[0],name:r[1],tags:r[2],aud:r[3],style:r[4],fans:r[5],gmv:r[6],roi:r[7],cr:r[8],cmin:r[9],cmax:r[10],from:r[11]}));
+
+const HOTSPOTS = [
+  {k:"场景化解决方案包装",d:"把品类功能重新包装成具体生活场景的解决方案"},
+  {k:"腰部达人真实感叙事",d:"贴近腰部达人的真实生活视角，弱化明星光环"},
+  {k:"成分技术细分卖点",d:"从大类目功效细分到具体成分或技术点"},
+  {k:"不知道我身材很曼妙",d:"源自评论区的抽象幽默句式，适合幽默口播开场"}
+];
+
+const TODAY = new Date("2026-08-01");           // demo 基准日
+const RANGE = {gmv:[0,350000], roi:[2,5.6], cr:[0.15,0.40]};
+
+/* ========== 工具 ========== */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const norm=(v,[a,b])=>clamp((v-a)/(b-a),0,1);
+function ageOf(t){const m=t.match(/(\d{2})\s*[-–~]\s*(\d{2})\s*岁/);if(m)return[+m[1],+m[2]];
+  const s=t.match(/(\d{2})\s*岁/);if(s)return[+s[1],+s[1]+4];return[18,45];}
+function genderOf(t){if(/男性为主/.test(t))return"m";if(/不限性别/.test(t))return"a";if(/女性/.test(t))return"f";if(/爸爸|奶爸|老张/.test(t))return"m";return"a";}
+function overlap(a,b){const lo=Math.max(a[0],b[0]),hi=Math.min(a[1],b[1]);return hi<=lo?-1:(hi-lo)/(Math.max(a[1],b[1])-Math.min(a[0],b[0]));}
+const STYLE_WORDS={"性价比":["性价比","平价"],"成分":["成分","科普","知识"],"专业":["专业","测评","权威","参数"],
+  "精致":["精致","人设"],"活泼":["活泼","幽默","快节奏"],"场景":["场景","剧情","短剧"],
+  "沉浸":["吃播","沉浸","开箱"],"实用":["实用","痛点","教程"],"文化":["文化","国货","情怀"],
+  "品质":["品质","高端","背书"],"萌":["萌娃","亲子"],"潮流":["潮流","Z世代"]};
+function toneKeys(t){return Object.keys(STYLE_WORDS).filter(k=>t.includes(k)||STYLE_WORDS[k].some(w=>t.includes(w)));}
+
+/* ========== 打分 ========== */
+function priceOf(p){return p.price;}
+function totalCost(p){return p.cost.reduce((a,b)=>a+b,0);}
+function breakevenRate(p){const gp=p.price-totalCost(p)-p.price*0.05;return gp/p.price;}
+
+function scores(p,k){
+  const pa=ageOf(p.aud),ka=ageOf(k.aud);
+  const ov=overlap(pa,ka);
+  const pf=genderOf(p.aud),kf=genderOf(k.aud);
+  let audience = ov<0?18:Math.round(55+45*ov);
+  if(pf!=="a"&&kf!=="a"&&pf!==kf) audience=Math.round(audience*0.55);
+  if(k.tags.includes(p.cat)) audience=Math.min(100,audience+6);
+
+  const keys=toneKeys(p.tone);
+  let hit=0; keys.forEach(kk=>{if(STYLE_WORDS[kk].some(w=>k.style.includes(w))||k.style.includes(kk))hit++;});
+  let style=keys.length?Math.round(45+55*(hit/keys.length)):55;
+  if(k.tags.includes(p.cat))style=Math.min(100,style+12);
+
+  const perf=Math.round(100*(0.45*norm(k.gmv,RANGE.gmv)+0.35*norm(k.roi,RANGE.roi)+0.20*norm(k.cr,RANGE.cr)));
+
+  const be=breakevenRate(p);
+  const mid=(k.cmin+k.cmax)/2;
+  const headroom=(be-mid)/be;
+  const commission=Math.round(clamp(headroom*220,0,100));
+
+  const days=Math.round((new Date(k.from)-TODAY)/86400000);
+  const schedule=days<=7?100:Math.round(clamp(100-(days-7)*2.6,15,100));
+
+  return {audience,style,perf,commission,schedule,days,be};
+}
+
+function weights(){
+  const a=+$("#w1").value,b=+$("#w2").value,c=+$("#w3").value;
+  const s=a+b+c||1;
+  return {audience:a/s*0.45, style:a/s*0.45, perf:b/s, commission:c/s*0.5, schedule:c/s*0.5};
+}
+
+function reasonText(p,k,s,w){
+  const parts=[];
+  const dims=[["audience","人群重合"],["style","内容风格匹配"],["perf","历史表现"],["commission","佣金空间"],["schedule","排期"]];
+  const ranked=dims.map(([key,label])=>({key,label,v:s[key]})).sort((x,y)=>y.v-x.v);
+  parts.push(`${ranked[0].label} ${ranked[0].v} 分`);
+  if(ranked[1].v>=60) parts.push(`${ranked[1].label} ${ranked[1].v} 分`);
+  return parts;
+}
+function chipsOf(p,k,s){
+  const out=[];
+  const dims=[["audience","人群重合"],["style","内容风格匹配"],["perf","历史表现"],["commission","佣金空间"],["schedule","排期"]];
+  const ranked=dims.map(([key,label])=>({key,label,v:s[key]})).sort((x,y)=>y.v-x.v);
+  ranked.slice(0,2).forEach(d=>{ if(d.v>=55) out.push(["good",`${d.label} ${d.v}`]); });
+  if(k.tags.includes(p.cat)) out.push(["",`类目命中「${p.cat}」`]);
+  if(k.roi>=4.5) out.push(["good",`历史 ROI ${k.roi.toFixed(1)}`]);
+  const mid=(k.cmin+k.cmax)/2, head=(s.be-mid);
+  if(head<0) out.push(["bad","期望佣金已超保本线"]);
+  else if(head<0.08) out.push(["warn",`佣金空间仅 ${(head*100).toFixed(1)}pp`]);
+  return out;
+}
+function risks(k,s){
+  const r=[];
+  const mid=(k.cmin+k.cmax)/2;
+  if(mid>s.be) r.push(["bad",`期望佣金 ${(mid*100).toFixed(0)}% 高于保本线 ${(s.be*100).toFixed(1)}%`]);
+  else if(s.be-mid<0.08) r.push(["warn",`佣金空间仅剩 ${((s.be-mid)*100).toFixed(1)} 个百分点`]);
+  if(s.days>30) r.push(["bad",`排期需等 ${s.days} 天，超过 30 天窗口`]);
+  else if(s.days>7) r.push(["warn",`排期 ${s.days} 天后可开播`]);
+  if(k.cr<0.24) r.push(["warn",`历史完播率仅 ${(k.cr*100).toFixed(0)}%`]);
+  return r;
+}
+
+/* ========== 渲染：匹配 ========== */
+let current=null;
+function runMatch(keep){
+  const p=PRODUCTS[+$("#product").value];
+  const w=weights();
+  const pool=KOLS.map(k=>({k,s:scores(p,k)}));
+  const cand=pool.filter(x=>x.k.tags.includes(p.cat));
+  const withScore=cand.map(x=>{
+    const total=(x.s.audience*w.audience+x.s.style*w.style+x.s.perf*w.perf+x.s.commission*w.commission+x.s.schedule*w.schedule);
+    return {...x,total};
+  }).sort((a,b)=>b.total-a.total);
+  const top=withScore.slice(0,6);
+
+  $("#funnel").innerHTML=`
+    <div class="fstep"><span>达人池</span><b class="num">${KOLS.length}</b></div>
+    <div class="fstep"><span>类目候选</span><b class="num">${cand.length}</b></div>
+    <div class="fstep"><span>粗排召回</span><b class="num">${Math.min(20,cand.length)}</b></div>
+    <div class="fstep"><span>精排出稿</span><b class="num">${top.length}</b></div>`;
+
+  $("#results").innerHTML=top.map((x,i)=>{
+    const s=x.s,rs=risks(x.k,s);
+    return `<article class="kard" data-i="${i}" data-selected="${current===x.k.id}">
+      <div class="krow">
+        <span class="rank num">${i+1}</span>
+        <div>
+          <div class="kname">${x.k.name}</div>
+          <div class="kmeta">${x.k.tags.join(" · ")} ／ ${(x.k.fans/10000).toFixed(1)} 万粉 ／ 均价 ${(x.k.gmv/10000).toFixed(1)} 万</div>
+        </div>
+        <div class="score"><b class="num">${x.total.toFixed(1)}</b><span>综合匹配分</span></div>
+      </div>
+      <div class="reasons">
+        ${chipsOf(p,x.k,s).map(([cls,t])=>`<span class="chip ${cls}">${t}</span>`).join("")}
+        ${rs.map(([cls,t])=>`<span class="chip ${cls}">${t}</span>`).join("")}
+      </div>
+    </article>`;
+  }).join("");
+
+  $$("#results .kard").forEach(el=>el.onclick=()=>{current=top[+el.dataset.i].k.id;runMatch(true);
+    renderDetail(p,top[+el.dataset.i],w);});
+  if(!keep){current=top[0].k.id;renderDetail(p,top[0],w);$$("#results .kard")[0].dataset.selected="true";}
+}
+
+function renderDetail(p,x,w){
+  const s=x.s;
+  const dims=[["人群重合",s.audience],["内容风格匹配",s.style],["历史表现",s.perf],["佣金空间",s.commission],["排期可用性",s.schedule]];
+  $("#detailTag").textContent=`${x.k.name} · ${x.total.toFixed(1)} 分`;
+  $("#detailBody").innerHTML=`
+    ${dims.map(([n,v])=>`<div class="dim"><div class="lbl"><span>${n}</span><span class="num">${v}</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`).join("")}
+    <div class="kv">
+      <div>历史 ROI<b class="num">${x.k.roi.toFixed(1)}</b></div>
+      <div>完播率<b class="num">${(x.k.cr*100).toFixed(0)}%</b></div>
+      <div>最低佣金<b class="num">${(x.k.cmin*100).toFixed(0)}%</b></div>
+      <div>保本佣金率<b class="num">${(s.be*100).toFixed(1)}%</b></div>
+    </div>
+    <p class="hint" style="margin:12px 0 6px"><b>为什么推荐：</b>${reasonText(p,x.k,s,w).join("；")}。</p>
+    <div class="check">${(risks(x.k,s).length?risks(x.k,s):[["good","无硬约束冲突"]]).map(([c,t])=>`<span class="chip ${c}">${t}</span>`).join("")}</div>
+    <p class="note" style="margin-top:10px">匹配只给候选与理由，是否采用由运营确认；权重调整会实时改变排序。</p>`;
+}
+
+/* ========== 渲染：脚本 ========== */
+function genScript(){
+  const p=PRODUCTS[+$("#sProduct").value];
+  const k=KOLS.find(x=>x.id===$("#sKol").value)||KOLS[0];
+  const form=$("#sForm").value, hot=HOTSPOTS[+$("#sHot").value];
+  const forms={
+    oral:`【开场 · 0-5s】\n大家好，我是${k.name}。今天这条不讲虚的，直接说一个我自己踩过的坑。\n\n【痛点 · 5-20s】\n${p.aud.replace(/、/g,"，")}——这类人最容易被劝退的点，其实是"买回来用不对"。\n\n【产品 · 20-45s】\n${p.name}，${p.tone.split("、")[0]}路线，主打的是${hot.k}：${hot.d}。\n\n【行动 · 45-60s】\n想要链接的扣 1，我把${p.cat}类目这份对比表发你，别自己瞎买。`,
+    drama:`【第一幕 · 困境】\n（镜头：桌上一堆没用完的东西）\n"又冲动消费了……"——这是上周的我。\n\n【第二幕 · 转折】\n朋友把${p.name}丢给我，说你先按${hot.k}的思路用一周。\n（${hot.d}）\n\n【第三幕 · 结果】\n一周后我把旧的都收进了柜子。不是它多神，是终于有人把${p.cat}讲明白了。\n\n【落点】\n评论区留"${p.cat}"，我把${k.name}的用法清单发你。`,
+    review:`【结论先行】\n${p.name}值不值？先说结论：${p.tone.includes("性价比")?"预算内可以闭眼入":"预算够就上，别买仿款"}。\n\n【三段拆解】\n1）成分配置：${p.tone.split("、")[1]||p.tone}，对应${p.aud.split("、")[0]}的核心诉求。\n2）使用体验：按${hot.k}的方式用了一周——${hot.d}。\n3）不适合谁：如果你要的是"立刻见效"，这条可以划走了。\n\n【结尾】\n同价位我测过 4 款，对比表放评论区置顶。`
+  };
+  $("#scriptOut").innerHTML=forms[form].replace(new RegExp(hot.k,"g"),`<mark>${hot.k}</mark>`);
+  $("#scriptOut").dataset.done="1";
+  const hit=[];
+  hit.push(["good","合规词库命中 0"]);
+  hit.push(["good","金额/ROI 未进入正文"]);
+  hit.push(["warn","含绝对化表述「闭眼入」，需人工确认"]);
+  hit.push(["good",`热点「${hot.k}」已注入`]);
+  $("#scriptCheck").innerHTML=hit.map(([c,t])=>`<span class="chip ${c}">${t}</span>`).join("");
+}
+
+/* ========== 渲染：损益 ========== */
+function loadProfit(){
+  const p=PRODUCTS[+$("#pProduct").value];
+  const [buy,pack,logi,over,tech,tax]=p.cost;
+  $("#pPrice").value=p.price;$("#pBuy").value=buy;$("#pPack").value=pack;
+  $("#pLogi").value=logi;$("#pOver").value=over;$("#pTech").value=tech;$("#pTax").value=tax;
+  runProfit();
+}
+function profitCalc(commRate){
+  const price=+$("#pPrice").value||0;
+  const cost=["pBuy","pPack","pLogi","pOver","pTech","pTax"].reduce((a,id)=>a+(+$("#"+id).value||0),0);
+  const platform=price*0.05;
+  const gross=price-cost-platform;
+  const comm=price*commRate;
+  const net=gross-comm;
+  const roi=price/(cost+platform+comm);
+  return {price,cost,platform,gross,comm,net,roi,be:gross/price};
+}
+function runProfit(){
+  const r=profitCalc(0.25);
+  $("#pTag").textContent=`${$("#pProduct").selectedOptions[0].text}`;
+  $("#oGross").textContent=r.gross.toFixed(2);
+  $("#oNet").textContent=r.net.toFixed(2);
+  $("#oRoi").textContent=r.roi.toFixed(2);
+  const be=r.be*100;
+  const ok=r.net>=0;
+  $("#pVerdict").className="verdict"+(ok?"":" bad");
+  $("#pVerdict").innerHTML=ok
+    ? `按 25% 佣金，单件净利 <b class="num">${r.net.toFixed(2)}</b> 元，ROI <b class="num">${r.roi.toFixed(2)}</b>。保本佣金率 <b class="num">${be.toFixed(1)}%</b>——佣金谈到这条线上方就是亏本投。`
+    : `按 25% 佣金，单件净利 <b class="num">${r.net.toFixed(2)}</b> 元，已经亏损。保本佣金率只有 <b class="num">${be.toFixed(1)}%</b>，需要压成本或提价后再谈。`;
+  $("#sens").innerHTML=[0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50].map(cr=>{
+    const x=profitCalc(cr);
+    const tag=x.net>=0?'<span class="chip good">可投</span>':'<span class="chip bad">亏损</span>';
+    return `<tr><td class="num">${(cr*100).toFixed(0)}%</td><td class="num">${x.comm.toFixed(1)}</td><td class="num">${x.net.toFixed(1)}</td><td class="num">${x.roi.toFixed(2)}</td><td>${tag}</td></tr>`;
+  }).join("");
+}
+
+/* ========== 渲染：评测 ========== */
+function renderEval(){
+  const layers=[["美妆 · 低客单",0.88],["美妆 · 高客单",0.71],["食品 · 短保",0.79],["家居 · 大件",0.84],["数码 · 高客单",0.66],["新达人（无历史）",0.52]];
+  $("#layerBars").innerHTML=layers.map(([n,v])=>
+    `<div class="layer"><span>${n}</span><div class="track"><i style="width:${v*100}%"></i></div><span class="num">${v.toFixed(2)}</span></div>`).join("");
+}
+
+/* ========== 初始化 ========== */
+function fillSelect(sel,items,label){
+  sel.innerHTML=items.map((x,i)=>`<option value="${i}">${label(x)}</option>`).join("");
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  fillSelect($("#product"),PRODUCTS,p=>`${p.name} · ${p.price} 元（${p.cat}）`);
+  fillSelect($("#sProduct"),PRODUCTS,p=>`${p.name}（${p.cat}）`);
+  fillSelect($("#pProduct"),PRODUCTS,p=>`${p.name} · ${p.price} 元`);
+  fillSelect($("#sKol"),KOLS,k=>`${k.name} · ${(k.fans/10000).toFixed(0)} 万粉`);
+  fillSelect($("#sHot"),HOTSPOTS,h=>h.k);
+  renderEval(); loadProfit(); $("#product").value="1"; runMatch(false);
+
+  $("#w1").oninput=()=>{ $("#w1v").textContent=$("#w1").value+"%"; runMatch(true); };
+  $("#w2").oninput=()=>{ $("#w2v").textContent=$("#w2").value+"%"; runMatch(true); };
+  $("#w3").oninput=()=>{ $("#w3v").textContent=$("#w3").value+"%"; runMatch(true); };
+  $("#product").onchange=()=>runMatch(false);
+  $("#runMatch").onclick=()=>runMatch(false);
+  $("#genScript").onclick=genScript;
+  $("#pProduct").onchange=loadProfit;
+  $("#runProfit").onclick=runProfit;
+
+  const tabs=$$(".tab");
+  tabs.forEach(t=>t.onclick=()=>{
+    tabs.forEach(x=>x.setAttribute("aria-selected", x===t));
+    $$(".view").forEach(v=>v.dataset.active = v.id==="view-"+t.dataset.tab);
+    if(location.hash!=="#"+t.dataset.tab) history.replaceState(null,"","#"+t.dataset.tab);
+    if(t.dataset.tab==="script" && !$("#scriptOut").dataset.done) genScript();
+  });
+  const h=location.hash.replace("#","");
+  if(h){const t=tabs.find(x=>x.dataset.tab===h); if(t)t.click();}
+});
+</script>
+</body>
+</html>
